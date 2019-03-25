@@ -43,6 +43,7 @@ public class MainDialog {
                 imp.close();
                 imp = new ImagePlus("", reader.openImage(currentImage));
                 imp.show();
+                System.gc();
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
@@ -54,6 +55,7 @@ public class MainDialog {
                 imp.close();
                 imp = new ImagePlus("", reader.openImage(currentImage));
                 imp.show();
+                System.gc();
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
