@@ -12,17 +12,17 @@
 		<relativePath />
 	</parent>
 
-	<groupId>imagej-tutorials</groupId>
-	<artifactId>load-and-display-dataset</artifactId>
+	<groupId>histology-plugin</groupId>
+	<artifactId>histology-plugin</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 
-	<name>Load and Display a Dataset</name>
-	<description>This example shows how to load and display a dataset using the ImageJ API.</description>
-	<url>https://github.com/[MY-ORG]/[MY-REPO]</url>
-	<inceptionYear>2012</inceptionYear>
+	<name>Histology-plugin for medical research</name>
+	<description>A simple imageJ plugin.</description>
+	<url>https://github.com/Luxor001/Imagej-plugin</url>
+	<inceptionYear>2019</inceptionYear>
 	<organization>
-		<name>[MY-ORGANIZATION-NAME]</name>
-		<url>[MY-ORGANIZATION-WEB-SITE]</url>
+		<name>Stefano Belli</name>
+		<url>https://github.com/Luxor001</url>
 	</organization>
 	<licenses>
 		<license>
@@ -34,8 +34,8 @@
 
 	<developers>
 		<developer>
-			<id>[MY-GITHUB-ID]</id>
-			<name>[MY-FULL-NAME]</name>
+			<id>https://github.com/Luxor001</id>
+			<name>Stefano Belli</name>
 			<url>https://imagej.net/User:[MY-IMAGEJ-WIKI-ACCOUNT]</url>
 		</developer>
 	</developers>

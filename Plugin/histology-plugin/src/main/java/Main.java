@@ -8,12 +8,16 @@
 
 
 import ij.*;
+import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import ij.process.ImageProcessor;
 
 import java.io.IOException;
 import loci.formats.ChannelSeparator;
+import loci.formats.IFormatReader;
+import loci.formats.ImageReader;
+import loci.formats.gui.BufferedImageReader;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 import loci.plugins.util.ImageProcessorReader;
@@ -26,7 +30,7 @@ import net.imagej.ImageJ;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>IRST")
+		menuPath = "Plugins>HistologyPlugin")
 public class Main implements Command, Previewable {
 
 
@@ -40,15 +44,19 @@ public class Main implements Command, Previewable {
 
 	@Override
 	public void run() {
+
 		// Chiediamo come prima cosa il file all'utente
 		String pathFile =  chooseInitialFile();
+		if(pathFile.equals("nullnull"))
+			System.exit(0);
 
 		ImporterOptions options;
 		ImagePlus[] imps = null;
 		try {
 			options = generateIRSTOptions(pathFile);
 			imps = BF.openImagePlus(options);
-		} catch (Exception e) {
+
+			} catch (Exception e) {
 			e.printStackTrace();
 		}
 
