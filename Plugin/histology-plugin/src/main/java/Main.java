@@ -13,6 +13,7 @@ import ij.io.OpenDialog;
 
 import ij.process.ImageProcessor;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import loci.formats.ChannelSeparator;
 import loci.formats.IFormatReader;
@@ -50,20 +51,28 @@ public class Main implements Command, Previewable {
 		if(pathFile.equals("nullnull"))
 			System.exit(0);
 
-		ImporterOptions options;
-		ImagePlus[] imps = null;
+		// ImporterOptions options;
+		ImagePlus imp = null;
 		try {
-			options = generateIRSTOptions(pathFile);
-			imps = BF.openImagePlus(options);
+			/*options = generateIRSTOptions(pathFile);
+			imp = BF.openImagePlus(options)[0];*/
 
+			long runtime = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+			final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
+			imageReader.setId(pathFile);
+			BufferedImageReader reader = BufferedImageReader.makeBufferedImageReader(imageReader);
+			imp = new ImagePlus("", reader.openImage(0));
+
+			long aa = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+			System.out.println((aa-runtime)/ 1000000);
 			} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// Da indagare. fa un "flatting" di canali multiimmagine. Utile in alcuni casi limite, ma quali sono le sue implicazioni?
-		imps[0].flattenStack();
+// 		imp.flattenStack();
 
-		MainDialog dialog = new MainDialog(imps[0], pathFile);
+		MainDialog dialog = new MainDialog(imp, pathFile);
 		dialog.show();
 		if(dialog.dialog.wasCanceled())
 			System.exit(0);
@@ -71,7 +80,7 @@ public class Main implements Command, Previewable {
 		// TODO: perché imps sempre 0?
 		// Se l'utente vuole aprire l'immagine come multistack, deleghiamo tutto a imagej
 		if(dialog.isOpenAsMultiStack()) {
-			imps[0].show();
+			imp.show();
 			return;
 		}
 
