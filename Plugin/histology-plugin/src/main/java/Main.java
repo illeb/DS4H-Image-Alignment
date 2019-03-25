@@ -16,6 +16,7 @@ import ij.process.ImageProcessor;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import loci.formats.ChannelSeparator;
+import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
@@ -53,30 +54,28 @@ public class Main implements Command, Previewable {
 
 		// ImporterOptions options;
 		ImagePlus imp = null;
+		BufferedImageReader bufferedReader = null;
 		try {
-			/*options = generateIRSTOptions(pathFile);
-			imp = BF.openImagePlus(options)[0];*/
-
-			long runtime = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 			final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
 			imageReader.setId(pathFile);
-			BufferedImageReader reader = BufferedImageReader.makeBufferedImageReader(imageReader);
-			imp = new ImagePlus("", reader.openImage(0));
-
-			long aa = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-			System.out.println((aa-runtime)/ 1000000);
-			} catch (Exception e) {
+			bufferedReader = BufferedImageReader.makeBufferedImageReader(imageReader);
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		// Da indagare. fa un "flatting" di canali multiimmagine. Utile in alcuni casi limite, ma quali sono le sue implicazioni?
-// 		imp.flattenStack();
-
-		MainDialog dialog = new MainDialog(imp, pathFile);
+		MainDialog dialog = null;
+		try {
+			dialog = new MainDialog(bufferedReader, pathFile);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		dialog.show();
 		if(dialog.dialog.wasCanceled())
 			System.exit(0);
 
+
+/*
 		// TODO: perché imps sempre 0?
 		// Se l'utente vuole aprire l'immagine come multistack, deleghiamo tutto a imagej
 		if(dialog.isOpenAsMultiStack()) {
@@ -85,7 +84,7 @@ public class Main implements Command, Previewable {
 		}
 
 		// L'utente richiede di aprire le immagini singolarmente. accontentiamolo (sigh)
-		openFileSingularly(pathFile);
+		openFileSingularly(pathFile);*/
 	}
 
 	private String chooseInitialFile() {

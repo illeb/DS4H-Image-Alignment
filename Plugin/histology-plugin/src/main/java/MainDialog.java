@@ -1,28 +1,67 @@
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
+import loci.formats.FormatException;
+import loci.formats.gui.BufferedImageReader;
 import sun.net.www.content.text.Generic;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
 
 public class MainDialog {
     GenericDialog dialog;
+    BufferedImageReader reader;
     ImagePlus imp;
 
+    Button backButton = new Button("<");
+    Button forwardButton = new Button(">");
+    int currentImage = 0;
     // FIXME: ricavare pathfile da imp? imp.getFileInfo() è vuoto though
-    public MainDialog(ImagePlus imp, String pathFile) {
-        this.imp = imp;
+    public MainDialog(BufferedImageReader reader, String pathFile) throws IOException, FormatException {
+        this.reader = reader;
+        // this.imp = imp;
         dialog = new GenericDialog("IRST");
         dialog.setResizable(false);
+        dialog.hideCancelButton();
         dialog.setOKLabel("Esegui");
-        dialog.setCancelLabel("Annulla");
+        // dialog.setCancelLabel("Annulla");
 
+        dialog.addMessage(reader.getCurrentFile());
+/*
         int nChannels = imp.getNChannels();
         int nSlices = imp.getNSlices();
         int nDimensions = imp.getNDimensions();
-        int nFrames = imp.getNFrames();
-        dialog.addMessage(pathFile);
-        dialog.addMessage("Found " + nChannels + " channels, " + nSlices + " slices, " + nDimensions + " dimensions, " + nFrames + " frames");
-        dialog.addCheckbox("open as multistack?", true);
+        int nFrames = imp.getNFrames();*/
+        // dialog.addMessage("Found " + nChannels + " channels, " + nSlices + " slices, " + nDimensions + " dimensions, " + nFrames + " frames");
+        // dialog.addCheckbox("open as multistack?", true);
+
+        backButton.addActionListener(e -> {
+            // currentImage = currentImage > 0 ? currentImage++ : currentImage--;
+            currentImage--;
+            try {
+                imp.close();
+                imp = new ImagePlus("", reader.openImage(currentImage));
+                imp.show();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        });
+        forwardButton.addActionListener(e -> {
+            currentImage++;
+            // currentImage = currentImage < reader.getImageCount() ? currentImage : currentImage++;
+            try {
+                imp.close();
+                imp = new ImagePlus("", reader.openImage(currentImage));
+                imp.show();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        });
+        dialog.add(backButton);
+        dialog.add(forwardButton);
+        imp = new ImagePlus("", reader.openImage(0));
+        imp.show();
     }
 
     public void show() {
