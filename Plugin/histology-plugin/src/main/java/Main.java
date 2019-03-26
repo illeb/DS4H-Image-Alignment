@@ -8,19 +8,15 @@
 
 
 import ij.*;
-import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import ij.process.ImageProcessor;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import loci.formats.ChannelSeparator;
-import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
-import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 import loci.plugins.util.ImageProcessorReader;
 import loci.plugins.util.LociPrefs;
@@ -64,9 +60,9 @@ public class Main implements Command, Previewable {
 			e.printStackTrace();
 		}
 
-		MainDialog dialog = null;
+		SideDialog dialog = null;
 		try {
-			dialog = new MainDialog(bufferedReader, pathFile);
+			dialog = new SideDialog(bufferedReader, pathFile);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
