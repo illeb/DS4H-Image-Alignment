@@ -10,10 +10,6 @@
 import ij.*;
 import ij.io.OpenDialog;
 
-import java.awt.*;
-import java.io.IOException;
-
-import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
@@ -26,7 +22,7 @@ import net.imagej.ImageJ;
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>HistologyPlugin")
-public class Main implements Command, Previewable {
+public class HistologyPlugin implements Command, Previewable {
 	private BufferedImageReader imageBuffer = null;
 	private ImagePlus image = null;
 	private int imageIndex = 0;
@@ -36,7 +32,7 @@ public class Main implements Command, Previewable {
 		final ImageJ ij = new ImageJ();
 		ij.launch(args);
 
-		ij.command().run(Main.class, true);
+		ij.command().run(HistologyPlugin.class, true);
 	}
 
 	private static void NextImageRequested(MainDialog.GUIEvents value) {
