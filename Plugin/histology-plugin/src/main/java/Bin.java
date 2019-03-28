@@ -160,11 +160,11 @@ public class Bin {
 }
 
 
-/*// dialog.addMessage(reader.getCurrentFile());
+/*// MainDialog.addMessage(reader.getCurrentFile());
 /*
         int nChannels = imp.getNChannels();
         int nSlices = imp.getNSlices();
         int nDimensions = imp.getNDimensions();
         int nFrames = imp.getNFrames();*/
-// dialog.addMessage("Found " + nChannels + " channels, " + nSlices + " slices, " + nDimensions + " dimensions, " + nFrames + " frames");
-// dialog.addCheckbox("open as multistack?", true);
+// MainDialog.addMessage("Found " + nChannels + " channels, " + nSlices + " slices, " + nDimensions + " dimensions, " + nFrames + " frames");
+// MainDialog.addCheckbox("open as multistack?", true);

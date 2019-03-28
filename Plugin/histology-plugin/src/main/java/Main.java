@@ -10,16 +10,13 @@
 import ij.*;
 import ij.io.OpenDialog;
 
-import ij.process.ImageProcessor;
-
+import java.awt.*;
 import java.io.IOException;
-import loci.formats.ChannelSeparator;
+
+import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
-import loci.plugins.in.ImporterOptions;
-import loci.plugins.util.ImageProcessorReader;
-import loci.plugins.util.LociPrefs;
 import org.scijava.command.Command;
 import org.scijava.command.Previewable;
 import org.scijava.plugin.Plugin;
@@ -30,7 +27,9 @@ import net.imagej.ImageJ;
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>HistologyPlugin")
 public class Main implements Command, Previewable {
-
+	private BufferedImageReader imageBuffer = null;
+	private ImagePlus image = null;
+	private int imageIndex = 0;
 
 	public static void main(final String... args) throws Exception {
 
@@ -40,82 +39,62 @@ public class Main implements Command, Previewable {
 		ij.command().run(Main.class, true);
 	}
 
+	private static void NextImageRequested(MainDialog.GUIEvents value) {
+	}
+
 	@Override
 	public void run() {
-
 		// Chiediamo come prima cosa il file all'utente
 		String pathFile =  chooseInitialFile();
 		if(pathFile.equals("nullnull"))
 			System.exit(0);
 
-		// ImporterOptions options;
-		ImagePlus imp = null;
-		BufferedImageReader bufferedReader = null;
 		try {
 			final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
 			imageReader.setId(pathFile);
-			bufferedReader = BufferedImageReader.makeBufferedImageReader(imageReader);
+			imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		SideDialog dialog = null;
+		MainDialog dialog = new MainDialog();
+
+		dialog.NextImageEvent$.subscribe(value -> {
+			imageIndex++;
+			showImage(imageIndex);
+		});
+		dialog.PrevImageEvent$.subscribe(value -> {
+			imageIndex++;
+			showImage(imageIndex);
+		});
+		dialog.ResetMarkerEvent$.subscribe(value -> {
+
+		});
+		dialog.AddMarkerEvent$.subscribe(value -> {
+
+		});
+
+		showImage(0);
+	}
+
+	private void showImage(int imageIndex) {
+		if(image != null)
+			image.close();
+		// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
+		System.gc();
 		try {
-			dialog = new SideDialog(bufferedReader, pathFile);
+			image = new ImagePlus("", imageBuffer.openImage(imageIndex));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		dialog.show();
-		if(dialog.dialog.wasCanceled())
-			System.exit(0);
-
-
-/*
-		// TODO: perché imps sempre 0?
-		// Se l'utente vuole aprire l'immagine come multistack, deleghiamo tutto a imagej
-		if(dialog.isOpenAsMultiStack()) {
-			imp.show();
-			return;
-		}
-
-		// L'utente richiede di aprire le immagini singolarmente. accontentiamolo (sigh)
-		openFileSingularly(pathFile);*/
+		image.show();
 	}
-
 	private String chooseInitialFile() {
 		OpenDialog od = new OpenDialog("Selezionare un'immagine");
-
 		String dir = od.getDirectory();
 		String name = od.getFileName();
 		return (dir + name);
-	}
-
-	private ImporterOptions generateIRSTOptions(String pathFile) throws IOException {
-		ImporterOptions options = new ImporterOptions();
-		options.setColorMode(ImporterOptions.COLOR_MODE_DEFAULT);
-		options.setId(pathFile);
-		// Per aprire files in maniera "ridotta": imps = BF.openThumbImagePlus(options);
-		return options;
-	}
-
-	// TODO: Controllare se sia necessario passare pathFile! forse basta passargli l'imp
-	private void openFileSingularly(String pathFile) {
-		ImageProcessorReader imageProcessorReader = new ImageProcessorReader(
-				new ChannelSeparator(LociPrefs.makeImageReader()));
-		try {
-			imageProcessorReader.setId(pathFile);
-			int imageCount = imageProcessorReader.getImageCount();
-
-
-			for (int i = 0; i < imageCount ; i++) {
-				ImageProcessor imageProcessor = imageProcessorReader.openProcessors(i)[0];
-				ImagePlus plus = new ImagePlus("c" + i, imageProcessor);
-				plus.show();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	@Override
