@@ -37,4 +37,12 @@ public class MainDialog extends JDialog {
         pack();
         setVisible(true);
     }
+
+    public void setNextImageButtonEnabled(boolean enabled) {
+        this.btn_nextImage.setEnabled(enabled);
+    }
+
+    public void setPrevImageButtonEnabled(boolean enabled) {
+        this.btn_prevImage.setEnabled(enabled);
+    }
 }

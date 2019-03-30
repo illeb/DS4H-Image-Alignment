@@ -8,8 +8,12 @@
 
 
 import ij.*;
+import ij.gui.Overlay;
+import ij.gui.Roi;
+import ij.gui.Toolbar;
 import ij.io.OpenDialog;
 
+import io.reactivex.Observable;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
@@ -18,6 +22,10 @@ import org.scijava.command.Previewable;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
+import org.scijava.tool.Tool;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -26,22 +34,19 @@ public class HistologyPlugin implements Command, Previewable {
 	private BufferedImageReader imageBuffer = null;
 	private ImagePlus image = null;
 	private int imageIndex = 0;
-
+	private static ImageJ ij = null;
 	public static void main(final String... args) throws Exception {
 
-		final ImageJ ij = new ImageJ();
+		ij = new ImageJ();
 		ij.launch(args);
 
 		ij.command().run(HistologyPlugin.class, true);
 	}
-
-	private static void NextImageRequested(MainDialog.GUIEvents value) {
-	}
-
 	@Override
 	public void run() {
 		// Chiediamo come prima cosa il file all'utente
 		String pathFile =  chooseInitialFile();
+
 		if(pathFile.equals("nullnull"))
 			System.exit(0);
 
@@ -56,35 +61,45 @@ public class HistologyPlugin implements Command, Previewable {
 
 		MainDialog dialog = new MainDialog();
 
+		dialog.PrevImageEvent$.subscribe(value -> {
+			imageIndex--;
+		});
 		dialog.NextImageEvent$.subscribe(value -> {
 			imageIndex++;
-			showImage(imageIndex);
 		});
-		dialog.PrevImageEvent$.subscribe(value -> {
-			imageIndex++;
+		Observable.merge(dialog.PrevImageEvent$, dialog.NextImageEvent$).subscribe(event -> {
 			showImage(imageIndex);
+			dialog.setPrevImageButtonEnabled(imageIndex != 0);
+			dialog.setNextImageButtonEnabled(imageIndex < imageBuffer.getImageCount() - 1);
 		});
 		dialog.ResetMarkerEvent$.subscribe(value -> {
 
 		});
 		dialog.AddMarkerEvent$.subscribe(value -> {
-
+			Tool tool = ij.tool().getTool("Oval");
+			ij.tool().setActiveTool(tool);
 		});
 
 		showImage(0);
+		dialog.setPrevImageButtonEnabled(imageIndex != 0);
+		dialog.setNextImageButtonEnabled(imageIndex < imageBuffer.getImageCount() - 1);
+
+		// image.setOverlay(new Overlay(new Roi(10,10,50,50)));
+
 	}
 
 	private void showImage(int imageIndex) {
 		if(image != null)
 			image.close();
 		// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
-		System.gc();
+		IJ.freeMemory();
 		try {
 			image = new ImagePlus("", imageBuffer.openImage(imageIndex));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		image.show();
+		image.setIJMenuBar(true);
 	}
 	private String chooseInitialFile() {
 		OpenDialog od = new OpenDialog("Selezionare un'immagine");
