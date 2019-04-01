@@ -8,39 +8,37 @@
 
 
 import ij.*;
-import ij.gui.Overlay;
-import ij.gui.Roi;
-import ij.gui.Toolbar;
 import ij.io.OpenDialog;
 
 import io.reactivex.Observable;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
+import net.imagej.ops.Op;
+import net.imagej.ops.OpEnvironment;
+import org.scijava.AbstractContextual;
 import org.scijava.command.Command;
-import org.scijava.command.Previewable;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
 import org.scijava.tool.Tool;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>HistologyPlugin")
-public class HistologyPlugin implements Command, Previewable {
+public class HistologyPlugin extends AbstractContextual implements Op {
 	private BufferedImageReader imageBuffer = null;
 	private ImagePlus image = null;
 	private int imageIndex = 0;
 	private static ImageJ ij = null;
 	public static void main(final String... args) throws Exception {
-
 		ij = new ImageJ();
-		ij.launch(args);
-
-		ij.command().run(HistologyPlugin.class, true);
+		ij.ui().showUI();
+		HistologyPlugin plugin = new HistologyPlugin();
+		plugin.setContext(ij.getContext());
+		plugin.run();
+		// ij.command().run(HistologyPlugin.class, true);
 	}
 	@Override
 	public void run() {
@@ -95,6 +93,8 @@ public class HistologyPlugin implements Command, Previewable {
 		IJ.freeMemory();
 		try {
 			image = new ImagePlus("", imageBuffer.openImage(imageIndex));
+			// api di image2j per mostrare l'immagine
+			// Display<?> display = ij.display().createDisplay(image);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -109,12 +109,12 @@ public class HistologyPlugin implements Command, Previewable {
 	}
 
 	@Override
-	public void preview() {
-
+	public OpEnvironment ops() {
+		return null;
 	}
 
 	@Override
-	public void cancel() {
+	public void setEnvironment(OpEnvironment ops) {
 
 	}
 }
