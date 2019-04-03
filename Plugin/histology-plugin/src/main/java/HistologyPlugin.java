@@ -118,7 +118,6 @@ public class HistologyPlugin extends AbstractContextual implements Op {
 			image.setOverlay(new Overlay());
 			image.getOverlay().setFillColor(Color.red);
 			image.getOverlay().setStrokeColor(Color.black);
-
 			// api di image2j per mostrare l'immagine
 			// final ImagePlusDisplay imageDisplay =
 			//					(ImagePlusDisplay) ij.display().createDisplay(image);
@@ -132,7 +131,8 @@ public class HistologyPlugin extends AbstractContextual implements Op {
 		window.getCanvas().addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				Roi roi = new Roi(e.getX(), e.getY(), 30, 30);
+				Roi roi = new Roi(e.getX() - 15, e.getY()-15, 30, 30);
+				roi.setCornerDiameter(30);
 				roi.setFillColor(Color.red);
 				roi.setStrokeColor(Color.blue);
 				roi.setStrokeWidth(3);
