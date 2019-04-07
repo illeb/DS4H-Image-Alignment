@@ -1,5 +1,5 @@
 import ij.io.OpenDialog;
-import io.reactivex.subjects.PublishSubject;
+import rx.subjects.PublishSubject;
 
 import javax.swing.*;
 import java.awt.*;

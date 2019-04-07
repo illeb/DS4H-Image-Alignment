@@ -1,15 +1,17 @@
 import ij.ImagePlus;
 import ij.gui.Overlay;
+import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
+import loci.formats.meta.MetadataStore;
+import loci.formats.services.OMEXMLService;
 
 import java.awt.*;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -21,6 +23,18 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     public BufferedImagesManager(String pathFile) throws IOException, FormatException {
         this.imageIndex = -1;
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
+
+        MetadataStore metadata;
+
+        try {
+            ServiceFactory factory = new ServiceFactory();
+            OMEXMLService service = factory.getInstance(OMEXMLService.class);
+            metadata = service.createOMEXMLMetadata();
+        }
+        catch (Exception exc) {
+            throw new FormatException("Could not create OME-XML store.", exc);
+        }
+        imageReader.setMetadataStore(metadata);
         imageReader.setId(pathFile);
         imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
 
@@ -31,6 +45,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
             imageOverlay.setStrokeColor(Color.black);
             this.imagesOverlays.add(new Overlay());
         }
+
     }
 
     private ImagePlus buildImage(int index) {
@@ -88,4 +103,12 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     @Override
     public void add(ImagePlus imagePlus) { }
+
+    public int currentIndex() {
+        return imageIndex;
+    }
+
+    public BufferedImageReader getReader() {
+        return this.imageBuffer;
+    }
 }

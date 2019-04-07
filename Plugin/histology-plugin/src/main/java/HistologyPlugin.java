@@ -10,9 +10,12 @@
 import ij.*;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
-import ij.io.OpenDialog;
 
-import io.reactivex.Observable;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceFactory;
+import loci.formats.gui.BufferedImageWriter;
+import loci.formats.out.TiffWriter;
+import loci.formats.services.OMEXMLService;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -20,6 +23,7 @@ import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
+import rx.Observable;
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -47,7 +51,6 @@ public class HistologyPlugin extends AbstractContextual implements Op {
 
 		// Chiediamo come prima cosa il file all'utente
 		MainDialog dialog = new MainDialog();
-		DialogEventsHandler(dialog);
 		this.pathFile = dialog.PromptForFile();
 
 		if (pathFile.equals("nullnull"))
@@ -55,6 +58,7 @@ public class HistologyPlugin extends AbstractContextual implements Op {
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
+			DialogEventsHandler(dialog);
 
 			image = manager.next();
 			show(image);
@@ -94,7 +98,22 @@ public class HistologyPlugin extends AbstractContextual implements Op {
 		});
 
 		dialog.ResetMarkerEvent$.subscribe(value -> {
+			TiffWriter a = new TiffWriter();
 
+            ServiceFactory factory = null;
+            try {
+                factory = new ServiceFactory();
+                OMEXMLService service = factory.getInstance(OMEXMLService.class);
+                a.setMetadataRetrieve(service.asRetrieve(manager.getReader().getMetadataStore()));
+                a.setId("E:/istologia/Istologia/prova.tiff");
+                BufferedImageWriter writer = BufferedImageWriter.makeBufferedImageWriter(a);
+                writer.setSeries(0);
+    //			writer.setWriteSequentially(true);
+                writer.saveImage(manager.currentIndex(), image.getBufferedImage());
+                writer.saveImage(manager.currentIndex()+1, manager.next().getBufferedImage());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 		});
 
 		dialog.AddMarkerEvent$.subscribe(value -> {
