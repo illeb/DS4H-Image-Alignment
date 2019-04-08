@@ -85,47 +85,18 @@
 			<groupId>net.imagej</groupId>
 			<artifactId>imagej</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
 		<dependency>
-			<groupId>loci</groupId>
-			<artifactId>loci_plugins</artifactId>
-			<version>4.4.9</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.25</version>
-		</dependency>
-		<dependency>
-			<groupId>io.reactivex.rxjava2</groupId>
-			<artifactId>rxjava</artifactId>
-			<version>2.2.8</version>
-		</dependency><!-- https://mvnrepository.com/artifact/net.imglib2/imglib2 -->
-		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2</artifactId>
-			<version>5.6.3</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/net.imagej/imagej-legacy -->
-		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>imagej-legacy</artifactId>
-			<version>0.35.1</version>
+			<groupId>ome</groupId>
+			<artifactId>bio-formats_plugins</artifactId>
+			<version>6.0.1</version>
+			<exclusions>
+				<exclusion>
+					<!-- NB: Exclude problematic uber-JAR that bundles commons-io. -->
+					<groupId>ch.systems.cisd</groupId>
+					<artifactId>jhdf5</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
     </dependencies>
-
-	<build>
-		<plugins>
-			<!-- we need to overide the enforcer rules here because we have java 1.6 and not the  old 1.4 -->
-			<plugin>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>enforce-java-1_4</id>
-						<phase>none</phase>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
-
 </project>
