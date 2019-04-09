@@ -7,7 +7,6 @@ public class MainDialog extends JDialog {
     private JPanel contentPane;
     private OnDialogEvcentListener eventListener;
 
-    // IRRELEVANT in respect of official wiki guidelines https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0#nulls
     enum GUIEvents {
         PREVIOUS,
         NEXT,
@@ -19,18 +18,13 @@ public class MainDialog extends JDialog {
     private JButton btn_resetMarkers;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    /*public PublishSubject<GUIEvents> AddMarkerEvent$ = PublishSubject.create();
-    public PublishSubject<GUIEvents> ResetMarkerEvent$ = PublishSubject.create();
-    public PublishSubject<GUIEvents> PrevImageEvent$ = PublishSubject.create();
-    public PublishSubject<GUIEvents> NextImageEvent$ = PublishSubject.create();
-*/
+    private JList list1;
+
     public MainDialog(OnDialogEvcentListener listener) {
         setContentPane(contentPane);
         setTitle("Histology plugin");
         setModal(true);
         setResizable(false);
-        setPreferredSize(new Dimension(250, 300));
-        setMinimumSize(new Dimension(250, 300));
         getRootPane().setDefaultButton(btn_prevImage);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setModalityType(ModalityType.MODELESS);
@@ -43,6 +37,8 @@ public class MainDialog extends JDialog {
         btn_nextImage.addActionListener(e -> this.eventListener.onEvent(GUIEvents.NEXT));
 
         pack();
+        setPreferredSize(new Dimension(this.getWidth(), 300));
+        setMinimumSize(new Dimension(this.getWidth(), 300));
         setVisible(true);
     }
 

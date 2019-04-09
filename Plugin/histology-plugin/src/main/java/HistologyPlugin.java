@@ -9,8 +9,10 @@
 
 import ij.*;
 import ij.gui.ImageWindow;
+import ij.gui.OvalRoi;
 import ij.gui.Roi;
 
+import ij.gui.TextRoi;
 import loci.common.services.ServiceFactory;
 import loci.formats.gui.BufferedImageWriter;
 import loci.formats.out.TiffWriter;
@@ -26,6 +28,7 @@ import net.imagej.ImageJ;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 
 
 /** Loads and displays a dataset using the ImageJ API. */
@@ -43,7 +46,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		HistologyPlugin plugin = new HistologyPlugin();
 		plugin.setContext(ij.getContext());
 		plugin.run();
-		// ij.command().run(HistologyPlugin.class, true);
 	}
 	@Override
 	public void run() {
@@ -74,12 +76,23 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		window.getCanvas().addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				Roi roi = new Roi(e.getX() - 15, e.getY()-15, 30, 30);
+				int x = e.getX();
+				int y = e.getY();
+				OvalRoi roi = new OvalRoi (x - 15, y - 15, 30, 30);
 				roi.setCornerDiameter(30);
 				roi.setFillColor(Color.red);
 				roi.setStrokeColor(Color.blue);
 				roi.setStrokeWidth(3);
+
+				int ovalRois = (int)Arrays.stream(image.getOverlay().toArray()).filter(currRoi -> currRoi instanceof OvalRoi).count();
+				TextRoi label = new TextRoi(x, y - 10, (ovalRois + 1) + "");
+				label.setCornerDiameter(30);
+				label.setJustification(TextRoi.CENTER);
+				label.setStrokeColor(Color.blue);
+				label.setAntialiased(true);
+				label.setCurrentFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
 				image.getOverlay().add(roi);
+				image.getOverlay().add(label);
 			}
 		});
 	}
@@ -114,7 +127,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		if(event == MainDialog.GUIEvents.RESET) {
 			TiffWriter a = new TiffWriter();
 
-			ServiceFactory factory = null;
+			ServiceFactory factory;
 			try {
 				factory = new ServiceFactory();
 				OMEXMLService service = factory.getInstance(OMEXMLService.class);
