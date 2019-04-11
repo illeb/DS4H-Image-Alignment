@@ -1,3 +1,4 @@
+import ij.gui.Roi;
 import ij.io.OpenDialog;
 
 import javax.swing.*;
@@ -11,16 +12,17 @@ public class MainDialog extends JDialog {
         PREVIOUS,
         NEXT,
         RESET,
-        IRRELEVANT
+        DELETE
     }
 
-    private JButton btn_addmarker;
+    private JButton btn_delete;
     private JButton btn_resetMarkers;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    private JList list1;
+    private JList<Roi> list1;
 
     public MainDialog(OnDialogEvcentListener listener) {
+        super(null, java.awt.Dialog.ModalityType.TOOLKIT_MODAL);
         setContentPane(contentPane);
         setTitle("Histology plugin");
         setModal(true);
@@ -31,10 +33,11 @@ public class MainDialog extends JDialog {
 
         this.eventListener = listener;
 
-        btn_addmarker.addActionListener(e -> this.eventListener.onEvent(GUIEvents.IRRELEVANT));
+        btn_delete.addActionListener(e -> this.eventListener.onEvent(GUIEvents.DELETE));
         btn_resetMarkers.addActionListener(e -> this.eventListener.onEvent(GUIEvents.RESET));
         btn_prevImage.addActionListener(e -> this.eventListener.onEvent(GUIEvents.PREVIOUS));
         btn_nextImage.addActionListener(e -> this.eventListener.onEvent(GUIEvents.NEXT));
+        list1.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> new JLabel("roi n." + (index + 1)));
 
         pack();
         setPreferredSize(new Dimension(this.getWidth(), 300));
@@ -50,12 +53,24 @@ public class MainDialog extends JDialog {
         this.btn_prevImage.setEnabled(enabled);
     }
 
-
     public String PromptForFile() {
         OpenDialog od = new OpenDialog("Selezionare un'immagine");
         String dir = od.getDirectory();
         String name = od.getFileName();
         return (dir + name);
+    }
+
+    BufferedImage image;
+    public void setImage(BufferedImage image) {
+        this.image = image;
+
+        DefaultListModel<Roi> model = new DefaultListModel<>();
+        int idx = 0;
+        for (Roi roi : image.getManager().getRoisAsArray())
+            model.add(idx++, roi);
+
+        image.getManager().runCommand("Show All");
+        list1.setModel(model);
     }
 }
 

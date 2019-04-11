@@ -8,11 +8,8 @@
 
 
 import ij.*;
-import ij.gui.ImageWindow;
-import ij.gui.OvalRoi;
-import ij.gui.Roi;
+import ij.gui.*;
 
-import ij.gui.TextRoi;
 import loci.common.services.ServiceFactory;
 import loci.formats.gui.BufferedImageWriter;
 import loci.formats.out.TiffWriter;
@@ -36,7 +33,7 @@ import java.util.Arrays;
 		menuPath = "Plugins>HistologyPlugin")
 public class HistologyPlugin extends AbstractContextual implements Op, OnDialogEvcentListener {
 	private BufferedImagesManager manager;
-	private ImagePlus image = null;
+	private BufferedImage image = null;
 	private static ImageJ ij = null;
 	private String pathFile;
 	MainDialog dialog;
@@ -47,6 +44,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		plugin.setContext(ij.getContext());
 		plugin.run();
 	}
+
 	@Override
 	public void run() {
 
@@ -60,39 +58,41 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		try {
 			manager = new BufferedImagesManager(pathFile);
 			DialogEventsHandler(dialog);
-
 			image = manager.next();
 			show(image);
 			dialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			dialog.setNextImageButtonEnabled(manager.hasNext());
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void show(ImagePlus image) {
+	private void show(BufferedImage image) {
 		image.show();
-		ImageWindow window = image.getWindow();
-		window.getCanvas().addMouseListener(new MouseAdapter() {
+		ImageCanvas canvas = image.getCanvas();
+		canvas.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				int x = e.getX();
-				int y = e.getY();
-				OvalRoi roi = new OvalRoi (x - 15, y - 15, 30, 30);
+				Point clickCoords = canvas.getCursorLoc();
+				OvalRoi roi = new OvalRoi (clickCoords.x - 15, clickCoords.y - 15, 30, 30);
 				roi.setCornerDiameter(30);
 				roi.setFillColor(Color.red);
 				roi.setStrokeColor(Color.blue);
 				roi.setStrokeWidth(3);
 
 				int ovalRois = (int)Arrays.stream(image.getOverlay().toArray()).filter(currRoi -> currRoi instanceof OvalRoi).count();
-				TextRoi label = new TextRoi(x, y - 10, (ovalRois + 1) + "");
+				TextRoi label = new TextRoi(clickCoords.x, clickCoords.y - 10, (ovalRois + 1) + "");
 				label.setCornerDiameter(30);
 				label.setJustification(TextRoi.CENTER);
 				label.setStrokeColor(Color.blue);
 				label.setAntialiased(true);
 				label.setCurrentFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
-				image.getOverlay().add(roi);
-				image.getOverlay().add(label);
+				// image.getOverlay().add(roi);
+				//image.getOverlay().add(label);
+				// managerA.add(image, roi, 0);
+				image.getManager().addRoi(roi);
+				dialog.setImage(image);
 			}
 		});
 	}
@@ -122,7 +122,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 			dialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			this.dialog.setNextImageButtonEnabled(manager.hasNext());
 		}
-
 
 		if(event == MainDialog.GUIEvents.RESET) {
 			TiffWriter a = new TiffWriter();

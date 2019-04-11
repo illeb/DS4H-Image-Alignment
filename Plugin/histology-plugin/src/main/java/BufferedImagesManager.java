@@ -1,5 +1,6 @@
 import ij.ImagePlus;
 import ij.gui.Overlay;
+import ij.plugin.frame.RoiManager;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
@@ -19,6 +20,8 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     private BufferedImageReader imageBuffer;
     private List<Overlay> imagesOverlays;
+    // private List<RoiManager> imagesROIs;
+    private List<RoiManager> roiManagers;
     private int imageIndex;
     public BufferedImagesManager(String pathFile) throws IOException, FormatException {
         this.imageIndex = -1;
@@ -46,12 +49,15 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
             this.imagesOverlays.add(new Overlay());
         }
 
+        this.roiManagers = new ArrayList<>(imageBuffer.getImageCount());
+        for(int i=0; i < imageBuffer.getImageCount(); i++)
+            this.roiManagers.add(new RoiManager(false));
     }
 
-    private ImagePlus buildImage(int index) {
-        ImagePlus image = null;
+    private BufferedImage buildImage(int index) {
+        BufferedImage image = null;
         try {
-            image = new ImagePlus(MessageFormat.format("Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index));
+            image = new BufferedImage(MessageFormat.format("Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index), roiManagers.get(index));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -65,7 +71,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     @Override
-    public ImagePlus next() {
+    public BufferedImage next() {
         if(!hasNext())
             return null;
         imageIndex++;
@@ -78,7 +84,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     @Override
-    public ImagePlus previous() {
+    public BufferedImage previous() {
         if(!hasPrevious())
             return null;
         imageIndex--;
