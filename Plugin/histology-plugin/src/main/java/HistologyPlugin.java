@@ -25,8 +25,6 @@ import net.imagej.ImageJ;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Arrays;
-
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -80,18 +78,9 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 				roi.setFillColor(Color.red);
 				roi.setStrokeColor(Color.blue);
 				roi.setStrokeWidth(3);
+				roi.setImage(image);
 
-				int ovalRois = (int)Arrays.stream(image.getOverlay().toArray()).filter(currRoi -> currRoi instanceof OvalRoi).count();
-				TextRoi label = new TextRoi(clickCoords.x, clickCoords.y - 10, (ovalRois + 1) + "");
-				label.setCornerDiameter(30);
-				label.setJustification(TextRoi.CENTER);
-				label.setStrokeColor(Color.blue);
-				label.setAntialiased(true);
-				label.setCurrentFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
-				// image.getOverlay().add(roi);
-				//image.getOverlay().add(label);
-				// managerA.add(image, roi, 0);
-				image.getManager().addRoi(roi);
+				image.getManager().add(image, roi, 0);
 				dialog.setImage(image);
 			}
 		});

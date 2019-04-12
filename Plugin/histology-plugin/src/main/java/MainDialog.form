@@ -93,6 +93,7 @@
             </constraints>
             <properties>
               <background color="-1"/>
+              <selectionMode value="0"/>
             </properties>
           </component>
         </children>

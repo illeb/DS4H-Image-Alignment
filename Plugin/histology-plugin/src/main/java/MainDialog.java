@@ -2,6 +2,9 @@ import ij.gui.Roi;
 import ij.io.OpenDialog;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 public class MainDialog extends JDialog {
@@ -19,7 +22,7 @@ public class MainDialog extends JDialog {
     private JButton btn_resetMarkers;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    private JList<Roi> list1;
+    private JList<String> list1;
 
     public MainDialog(OnDialogEvcentListener listener) {
         super(null, java.awt.Dialog.ModalityType.TOOLKIT_MODAL);
@@ -37,7 +40,9 @@ public class MainDialog extends JDialog {
         btn_resetMarkers.addActionListener(e -> this.eventListener.onEvent(GUIEvents.RESET));
         btn_prevImage.addActionListener(e -> this.eventListener.onEvent(GUIEvents.PREVIOUS));
         btn_nextImage.addActionListener(e -> this.eventListener.onEvent(GUIEvents.NEXT));
-        list1.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> new JLabel("roi n." + (index + 1)));
+        list1.addListSelectionListener(e -> {
+            int a = 0;
+        });
 
         pack();
         setPreferredSize(new Dimension(this.getWidth(), 300));
@@ -64,12 +69,18 @@ public class MainDialog extends JDialog {
     public void setImage(BufferedImage image) {
         this.image = image;
 
-        DefaultListModel<Roi> model = new DefaultListModel<>();
+        DefaultListModel<String> model = new DefaultListModel<>();
+        int idx = 1;
+        for (Roi roi : image.getManager().getRoisAsArray())
+            model.add(idx++, "roi n." + idx);
+        /*DefaultListModel<Roi> model = new DefaultListModel<>();
         int idx = 0;
         for (Roi roi : image.getManager().getRoisAsArray())
             model.add(idx++, roi);
-
+*/
+        // roi n." + (index + 1);
         image.getManager().runCommand("Show All");
+        image.getManager().runCommand("show all with labels");
         list1.setModel(model);
     }
 }
