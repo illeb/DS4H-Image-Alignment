@@ -1,3 +1,5 @@
+package histology;
+
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
 
@@ -10,7 +12,7 @@ public class BufferedImage extends ImagePlus {
         this.manager = manager;
     }
 
-    RoiManager getManager() {
+    public RoiManager getManager() {
         return this.manager;
     }
 }

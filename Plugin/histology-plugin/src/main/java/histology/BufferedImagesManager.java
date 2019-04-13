@@ -1,3 +1,5 @@
+package histology;
+
 import ij.ImagePlus;
 import ij.gui.Overlay;
 import ij.plugin.frame.RoiManager;

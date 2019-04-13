@@ -1,4 +1,4 @@
-/*
+package histology;/*
  * To the extent possible under law, the ImageJ developers have waived
  * all copyright and related or neighboring rights to this tutorial code.
  *
@@ -7,6 +7,10 @@
  */
 
 
+import histology.maindialog.OnDialogEventListener;
+import histology.maindialog.event.ChangeImageEvent;
+import histology.maindialog.event.DeleteEvent;
+import histology.maindialog.event.IDialogEvent;
 import ij.*;
 import ij.gui.*;
 
@@ -14,6 +18,7 @@ import loci.common.services.ServiceFactory;
 import loci.formats.gui.BufferedImageWriter;
 import loci.formats.out.TiffWriter;
 import loci.formats.services.OMEXMLService;
+import histology.maindialog.MainDialog;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -22,14 +27,15 @@ import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>HistologyPlugin")
-public class HistologyPlugin extends AbstractContextual implements Op, OnDialogEvcentListener {
+		menuPath = "Plugins>histology.HistologyPlugin")
+public class HistologyPlugin extends AbstractContextual implements Op, OnDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;
 	private static ImageJ ij = null;
@@ -72,6 +78,9 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		canvas.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
+				// rendiamo il button di "quick annotaion" pari al click destro del mouse
+				if(!SwingUtilities.isRightMouseButton(e))
+					return;
 				Point clickCoords = canvas.getCursorLoc();
 				OvalRoi roi = new OvalRoi (clickCoords.x - 15, clickCoords.y - 15, 30, 30);
 				roi.setCornerDiameter(30);
@@ -100,36 +109,27 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 	}
 
 	@Override
-	public void onEvent(MainDialog.GUIEvents event) {
-		if(event == MainDialog.GUIEvents.NEXT || event == MainDialog.GUIEvents.PREVIOUS) {
+	public void onEvent(IDialogEvent dialogEvent) {
+		if(dialogEvent instanceof ChangeImageEvent) {
+		    ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 			// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 			IJ.freeMemory();
 			if (image != null)
 				image.close();
-			image = event == MainDialog.GUIEvents.NEXT ? this.manager.next() : this.manager.previous();
+			image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
 			show(image);
 			dialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			this.dialog.setNextImageButtonEnabled(manager.hasNext());
+			dialog.setImage(image);
 		}
 
-		if(event == MainDialog.GUIEvents.RESET) {
-			TiffWriter a = new TiffWriter();
+		if(dialogEvent instanceof DeleteEvent){
+		    DeleteEvent event = (DeleteEvent)dialogEvent;
+		    image.getManager().select(event.getRoiIndex());
+		    image.getManager().runCommand("Delete");
+		    dialog.setImage(image);
+        }
 
-			ServiceFactory factory;
-			try {
-				factory = new ServiceFactory();
-				OMEXMLService service = factory.getInstance(OMEXMLService.class);
-				a.setMetadataRetrieve(service.asRetrieve(manager.getReader().getMetadataStore()));
-				a.setId("E:/istologia/Istologia/prova.tiff");
-				BufferedImageWriter writer = BufferedImageWriter.makeBufferedImageWriter(a);
-				writer.setSeries(0);
-				//			writer.setWriteSequentially(true);
-				writer.saveImage(manager.currentIndex(), image.getBufferedImage());
-				writer.saveImage(manager.currentIndex() + 1, manager.next().getBufferedImage());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
 	}
 }
 
