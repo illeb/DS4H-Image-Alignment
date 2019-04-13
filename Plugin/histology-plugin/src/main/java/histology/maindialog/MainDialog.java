@@ -8,6 +8,7 @@ import ij.io.OpenDialog;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.MessageFormat;
 
 public class MainDialog extends JDialog {
     private JPanel contentPane;
@@ -67,7 +68,7 @@ public class MainDialog extends JDialog {
         DefaultListModel<String> model = new DefaultListModel<>();
         int idx = 0;
         for (Roi roi : image.getManager().getRoisAsArray())
-            model.add(idx++, "roi n." + idx);
+            model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase(), (int)roi.getYBase()));
         image.getManager().runCommand("Show All");
         image.getManager().runCommand("show all with labels");
         list1.setModel(model);
