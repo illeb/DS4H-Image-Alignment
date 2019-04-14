@@ -9,6 +9,7 @@ import ij.io.OpenDialog;
 import javax.swing.*;
 import java.awt.*;
 import java.text.MessageFormat;
+import java.util.Arrays;
 
 public class MainDialog extends JDialog {
     private JPanel contentPane;
@@ -17,7 +18,7 @@ public class MainDialog extends JDialog {
     private JButton btn_delete;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    private JList<String> list1;
+    private JList<String> lst_rois;
 
     public MainDialog(OnDialogEventListener listener) {
         super(null, java.awt.Dialog.ModalityType.TOOLKIT_MODAL);
@@ -32,13 +33,24 @@ public class MainDialog extends JDialog {
         this.eventListener = listener;
 
         btn_delete.addActionListener(e -> {
-            int index = list1.getSelectedIndex();
-            this.eventListener.onEvent(new DeleteEvent(list1.getSelectedIndex()));
-            list1.setSelectedIndex(index);
+            int index = lst_rois.getSelectedIndex();
+            this.eventListener.onEvent(new DeleteEvent(lst_rois.getSelectedIndex()));
+            lst_rois.setSelectedIndex(index);
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-        list1.addListSelectionListener(e -> btn_delete.setEnabled(true));
+        lst_rois.addListSelectionListener(e -> {
+            int index = lst_rois.getSelectedIndex();
+            // Exclude invalid selections of the list (by misclick or from a deletion)
+            if (index == -1)
+                return;
+
+            Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
+            image.getManager().select(index);
+            image.getRoi().setStrokeColor(Color.yellow);
+            image.updateAndDraw();
+            btn_delete.setEnabled(true);
+        });
 
         pack();
         setPreferredSize(new Dimension(this.getWidth(), 300));
@@ -71,9 +83,9 @@ public class MainDialog extends JDialog {
             model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase(), (int)roi.getYBase()));
         image.getManager().runCommand("Show All");
         image.getManager().runCommand("show all with labels");
-        list1.setModel(model);
+        lst_rois.setModel(model);
 
-        if(list1.getSelectedIndex() == -1)
+        if(lst_rois.getSelectedIndex() == -1)
             btn_delete.setEnabled(false);
     }
 }

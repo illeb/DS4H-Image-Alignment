@@ -61,7 +61,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
-			DialogEventsHandler(dialog);
 			image = manager.next();
 			show(image);
 			dialog.setPrevImageButtonEnabled(manager.hasPrevious());
@@ -95,9 +94,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		});
 	}
 
-	private void DialogEventsHandler(MainDialog dialog) {
-
-	}
 	@Override
 	public OpEnvironment ops() {
 		return null;
@@ -129,7 +125,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		    image.getManager().runCommand("Delete");
 		    dialog.setImage(image);
         }
-
 	}
 }
 
