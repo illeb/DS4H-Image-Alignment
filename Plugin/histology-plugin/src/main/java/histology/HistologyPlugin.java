@@ -55,7 +55,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 		// Chiediamo come prima cosa il file all'utente
 		dialog = new MainDialog(this);
 		this.pathFile = dialog.PromptForFile();
-
 		if (pathFile.equals("nullnull"))
 			System.exit(0);
 
@@ -65,7 +64,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnDialogE
 			show(image);
 			dialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			dialog.setNextImageButtonEnabled(manager.hasNext());
-
+			this.dialog.setVisible(true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

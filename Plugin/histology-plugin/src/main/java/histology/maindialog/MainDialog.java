@@ -55,7 +55,6 @@ public class MainDialog extends JDialog {
         pack();
         setPreferredSize(new Dimension(this.getWidth(), 300));
         setMinimumSize(new Dimension(this.getWidth(), 300));
-        setVisible(true);
     }
 
     public void setNextImageButtonEnabled(boolean enabled) {
