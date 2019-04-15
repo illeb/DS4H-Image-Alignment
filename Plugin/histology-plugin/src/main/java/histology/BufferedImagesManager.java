@@ -21,8 +21,6 @@ import java.util.ListIterator;
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     private BufferedImageReader imageBuffer;
-    private List<Overlay> imagesOverlays;
-    // private List<RoiManager> imagesROIs;
     private List<RoiManager> roiManagers;
     private int imageIndex;
     public BufferedImagesManager(String pathFile) throws IOException, FormatException {
@@ -43,14 +41,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         imageReader.setId(pathFile);
         imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
 
-        this.imagesOverlays = new ArrayList<>(imageBuffer.getImageCount());
-        for(int i=0; i < imageBuffer.getImageCount(); i++) {
-            Overlay imageOverlay = new Overlay();
-            imageOverlay.setFillColor(Color.red);
-            imageOverlay.setStrokeColor(Color.black);
-            this.imagesOverlays.add(new Overlay());
-        }
-
         this.roiManagers = new ArrayList<>(imageBuffer.getImageCount());
         for(int i=0; i < imageBuffer.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
@@ -59,11 +49,10 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     private BufferedImage buildImage(int index) {
         BufferedImage image = null;
         try {
-            image = new BufferedImage(MessageFormat.format("Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index), roiManagers.get(index));
+            image = new BufferedImage(MessageFormat.format("Editor Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index), roiManagers.get(index));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        image.setOverlay(imagesOverlays.get(index));
         return image;
     }
 
@@ -112,11 +101,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     @Override
     public void add(ImagePlus imagePlus) { }
 
-    public int currentIndex() {
-        return imageIndex;
-    }
-
-    public BufferedImageReader getReader() {
-        return this.imageBuffer;
+    public int getCurrentIndex() {
+        return this.imageIndex;
     }
 }
