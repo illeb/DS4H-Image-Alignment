@@ -1,7 +1,7 @@
 package histology;
 
 import ij.ImagePlus;
-import ij.gui.Overlay;
+import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
@@ -15,6 +15,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -23,7 +24,9 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     private BufferedImageReader imageBuffer;
     private List<RoiManager> roiManagers;
     private int imageIndex;
+    public String pathFile;
     public BufferedImagesManager(String pathFile) throws IOException, FormatException {
+        this.pathFile = pathFile;
         this.imageIndex = -1;
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
 
@@ -46,7 +49,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
             this.roiManagers.add(new RoiManager(false));
     }
 
-    private BufferedImage buildImage(int index) {
+    private BufferedImage getImage(int index) {
         BufferedImage image = null;
         try {
             image = new BufferedImage(MessageFormat.format("Editor Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index), roiManagers.get(index));
@@ -66,7 +69,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         if(!hasNext())
             return null;
         imageIndex++;
-        return buildImage(imageIndex);
+        return getImage(imageIndex);
     }
 
     @Override
@@ -79,7 +82,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         if(!hasPrevious())
             return null;
         imageIndex--;
-        return buildImage(imageIndex);
+        return getImage(imageIndex);
     }
 
     @Override
@@ -103,5 +106,34 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     public int getCurrentIndex() {
         return this.imageIndex;
+    }
+
+    public int getNImages() {
+        return imageBuffer.getImageCount();
+    }
+
+    public static class BufferedImage extends ImagePlus {
+        private RoiManager  manager;
+        private Roi[] roisBackup;
+        BufferedImage(String text, Image image, RoiManager  manager) {
+            super(text, image);
+            this.manager = manager;
+        }
+
+        public RoiManager getManager() {
+            return this.manager;
+        }
+
+        public void restoreRois() {
+            Arrays.stream(this.roisBackup).forEach(roi -> manager.add(this, roi, 0));
+        }
+
+        public void backupRois() {
+            this.roisBackup = this.manager.getRoisAsArray();
+        }
+    }
+
+    public BufferedImage get(int index) {
+        return this.getImage(index);
     }
 }

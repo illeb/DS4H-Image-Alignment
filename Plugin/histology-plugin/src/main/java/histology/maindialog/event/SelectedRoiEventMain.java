@@ -1,10 +1,8 @@
 package histology.maindialog.event;
 
-import java.awt.*;
-
-public class SelectedRoiEvent implements IDialogEvent {
+public class SelectedRoiEventMain implements IMainDialogEvent {
     private int roiIndex;
-    public SelectedRoiEvent(int index) {
+    public SelectedRoiEventMain(int index) {
         this.roiIndex = index;
     }
 

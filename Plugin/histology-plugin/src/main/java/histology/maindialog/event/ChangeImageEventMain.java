@@ -1,12 +1,12 @@
 package histology.maindialog.event;
 
-public class ChangeImageEvent implements IDialogEvent {
+public class ChangeImageEventMain implements IMainDialogEvent {
     private ChangeDirection direction;
     public enum ChangeDirection {
         NEXT,
         PREV
     }
-    public ChangeImageEvent(ChangeDirection direction) {
+    public ChangeImageEventMain(ChangeDirection direction) {
         this.direction = direction;
     }
 

@@ -2,9 +2,9 @@ package histology.maindialog.event;
 
 import java.awt.*;
 
-public class AddRoiEvent implements IDialogEvent {
+public class AddRoiEventMain implements IMainDialogEvent {
     private Point coords;
-    public AddRoiEvent(Point coords) {
+    public AddRoiEventMain(Point coords) {
         this.coords = coords;
     }
 

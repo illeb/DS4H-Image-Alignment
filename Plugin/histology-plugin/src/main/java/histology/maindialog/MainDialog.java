@@ -1,29 +1,20 @@
-package histology;
+package histology.maindialog;
 
-import histology.maindialog.CustomCanvas;
-import histology.maindialog.OnDialogEventListener;
-import histology.maindialog.event.AddRoiEvent;
-import histology.maindialog.event.ChangeImageEvent;
-import histology.maindialog.event.DeleteEvent;
-import histology.maindialog.event.SelectedRoiEvent;
+import histology.BufferedImagesManager;
+import histology.maindialog.event.*;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
-import ij.gui.OvalRoi;
 import ij.gui.Roi;
 import ij.io.OpenDialog;
 import ij.plugin.frame.RoiManager;
-import loci.plugins.BF;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.text.MessageFormat;
-import java.util.Arrays;
 
 public class MainDialog extends ImageWindow {
-    private final OnDialogEventListener eventListener;
+    private final OnMainDialogEventListener eventListener;
 
 
     /** constraints for annotation panel */
@@ -33,26 +24,26 @@ public class MainDialog extends ImageWindow {
     private JPanel buttonsPanel = new JPanel();
 
     private JPanel trainingJPanel = new JPanel();
-    private JPanel optionsJPanel = new JPanel();
+    private JPanel actionsJPanel = new JPanel();
 
     private Panel all = new Panel();
 
-    /** save data button */
+    private JCheckBox chk_showPreview;
     private JButton btn_deleteRoi;
-    /** settings button */
     private JButton btn_prevImage;
-    /** create new class button */
     private JButton btn_nextImage;
 
     private JList<String> lst_rois;
 
-    private BufferedImage image;
+    private BufferedImagesManager.BufferedImage image;
 
-    public MainDialog(ImagePlus plus, OnDialogEventListener listener) {
+    public MainDialog(ImagePlus plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
 
         final CustomCanvas canvas = (CustomCanvas) getCanvas();
 
+        chk_showPreview = new JCheckBox("Show preview window");
+        chk_showPreview.setToolTipText("Show a preview window");
 
         btn_deleteRoi = new JButton ("DELETE");
         btn_deleteRoi.setToolTipText("Delete current ROI selected");
@@ -96,24 +87,26 @@ public class MainDialog extends ImageWindow {
         trainingJPanel.setLayout(trainingLayout);
 
         // Options panel
-        optionsJPanel.setBorder(BorderFactory.createTitledBorder("Options"));
-        GridBagLayout optionsLayout = new GridBagLayout();
-        GridBagConstraints optionsConstraints = new GridBagConstraints();
-        optionsConstraints.anchor = GridBagConstraints.NORTHWEST;
-        optionsConstraints.fill = GridBagConstraints.HORIZONTAL;
-        optionsConstraints.gridwidth = 1;
-        optionsConstraints.gridheight = 1;
-        optionsConstraints.gridx = 0;
-        optionsConstraints.gridy = 0;
-        optionsConstraints.insets = new Insets(5, 5, 6, 6);
-        optionsJPanel.setLayout(optionsLayout);
+        actionsJPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
+        GridBagLayout actionsLayout = new GridBagLayout();
+        GridBagConstraints actionsConstraints = new GridBagConstraints();
+        actionsConstraints.anchor = GridBagConstraints.NORTHWEST;
+        actionsConstraints.fill = GridBagConstraints.HORIZONTAL;
+        actionsConstraints.gridwidth = 1;
+        actionsConstraints.gridheight = 1;
+        actionsConstraints.gridx = 0;
+        actionsConstraints.gridy = 0;
+        actionsConstraints.insets = new Insets(5, 5, 6, 6);
+        actionsJPanel.setLayout(actionsLayout);
 
-        optionsJPanel.add(btn_deleteRoi, optionsConstraints);
-        optionsConstraints.gridy++;
-        optionsJPanel.add(btn_prevImage, optionsConstraints);
-        optionsConstraints.gridy++;
-        optionsJPanel.add(btn_nextImage, optionsConstraints);
-        optionsConstraints.gridy++;
+        actionsJPanel.add(chk_showPreview, actionsConstraints);
+        actionsConstraints.gridy++;
+        actionsJPanel.add(btn_deleteRoi, actionsConstraints);
+        actionsConstraints.gridy++;
+        actionsJPanel.add(btn_prevImage, actionsConstraints);
+        actionsConstraints.gridy++;
+        actionsJPanel.add(btn_nextImage, actionsConstraints);
+        actionsConstraints.gridy++;
 
         // Buttons panel (including training and options)
         GridBagLayout buttonsLayout = new GridBagLayout();
@@ -127,7 +120,7 @@ public class MainDialog extends ImageWindow {
         buttonsConstraints.gridy = 0;
         buttonsPanel.add(trainingJPanel, buttonsConstraints);
         buttonsConstraints.gridy++;
-        buttonsPanel.add(optionsJPanel, buttonsConstraints);
+        buttonsPanel.add(actionsJPanel, buttonsConstraints);
         buttonsConstraints.gridy++;
         buttonsConstraints.insets = new Insets(5, 5, 6, 6);
 
@@ -169,24 +162,25 @@ public class MainDialog extends ImageWindow {
 
         this.eventListener = listener;
 
+        chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEventMain(chk_showPreview.isSelected())));
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
-            this.eventListener.onEvent(new DeleteEvent(lst_rois.getSelectedIndex()));
+            this.eventListener.onMainDialogEvent(new DeleteEventMain(lst_rois.getSelectedIndex()));
             lst_rois.setSelectedIndex(index);
         });
-        btn_prevImage.addActionListener(e -> this.eventListener.onEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
-        btn_nextImage.addActionListener(e -> this.eventListener.onEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
+        btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.PREV)));
+        btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.NEXT)));
         lst_rois.addListSelectionListener(e -> {
             int index = lst_rois.getSelectedIndex();
             // Exclude invalid selections of the list (by misclick or from a deletion)
             if (index == -1)
                 return;
-            this.eventListener.onEvent(new SelectedRoiEvent(index));
+            this.eventListener.onMainDialogEvent(new SelectedRoiEventMain(index));
             btn_deleteRoi.setEnabled(true);
         });
-        pack();
-
         setCanvasListener();
+
+        pack();
     }
 
     public void setNextImageButtonEnabled(boolean enabled) {
@@ -197,7 +191,7 @@ public class MainDialog extends ImageWindow {
         this.btn_prevImage.setEnabled(enabled);
     }
 
-    public void changeImage(BufferedImage image) {
+    public void changeImage(BufferedImagesManager.BufferedImage image) {
         this.setImage(image);
         image.backupRois();
         image.getManager().reset();
@@ -217,7 +211,7 @@ public class MainDialog extends ImageWindow {
                 if(!SwingUtilities.isRightMouseButton(e))
                     return;
                 Point clickCoords = canvas.getCursorLoc();
-                eventListener.onEvent(new AddRoiEvent(clickCoords));
+                eventListener.onMainDialogEvent(new AddRoiEventMain(clickCoords));
             }
         });
     }
