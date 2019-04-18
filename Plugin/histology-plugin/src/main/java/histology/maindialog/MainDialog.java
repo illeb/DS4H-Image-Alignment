@@ -9,6 +9,8 @@ import ij.io.OpenDialog;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.MessageFormat;
@@ -36,6 +38,7 @@ public class MainDialog extends ImageWindow {
     private JList<String> lst_rois;
 
     private BufferedImagesManager.BufferedImage image;
+
 
     public MainDialog(ImagePlus plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
@@ -84,6 +87,7 @@ public class MainDialog extends ImageWindow {
         trainingJPanel.add(lst_rois, trainingConstraints);
         lst_rois.setPreferredSize(new Dimension(200, 200));
         lst_rois.setBackground(Color.white);
+        lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         trainingJPanel.setLayout(trainingLayout);
 
         // Options panel
@@ -170,14 +174,30 @@ public class MainDialog extends ImageWindow {
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.NEXT)));
-        lst_rois.addListSelectionListener(e -> {
-            int index = lst_rois.getSelectedIndex();
-            // Exclude invalid selections of the list (by misclick or from a deletion)
-            if (index == -1)
-                return;
-            this.eventListener.onMainDialogEvent(new SelectedRoiEventMain(index));
-            btn_deleteRoi.setEnabled(true);
+
+        lst_rois.setSelectionModel(new DefaultListSelectionModel() {
+            private static final long serialVersionUID = 1L;
+
+            boolean gestureStarted = false;
+
+            @Override
+            public void setSelectionInterval(int index0, int index1) {
+
+                if(!gestureStarted){
+                    eventListener.onMainDialogEvent(new SelectedRoiEventMain(index0));
+                    super.setSelectionInterval(index0, index1);
+                }
+                gestureStarted = true;
+            }
+
+            @Override
+            public void setValueIsAdjusting(boolean isAdjusting) {
+                if (isAdjusting == false) {
+                    gestureStarted = false;
+                }
+            }
         });
+        lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         setCanvasListener();
 
         pack();
@@ -228,8 +248,13 @@ public class MainDialog extends ImageWindow {
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
     }
+
     public void setPreviewWindowCheckBox(boolean value) {
         this.chk_showPreview.setSelected(value);
+    }
+
+    public void clearRoiSelection() {
+        lst_rois.clearSelection();
     }
 
     public static String PromptForFile() {

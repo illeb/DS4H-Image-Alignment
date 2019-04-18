@@ -30,6 +30,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private BufferedImagesManager.BufferedImage image = null;
 	private PreviewDialog previewDialog;
 	private MainDialog mainDialog;
+	private Roi previousSelectedRoi;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -57,10 +58,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			mainDialog.setVisible(true);
 			mainDialog.pack();
-			/*previewWindow =  BF.openImagePlus(pathFile)[0];
-			previewWindow.flattenStack();
-			previewWindow.show();
-*/
 			this.mainDialog.setVisible(true);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -136,7 +133,15 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			SelectedRoiEventMain event = (SelectedRoiEventMain)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
+			if(image.getRoi() == previousSelectedRoi){
+				image.getManager().deselect();
+				mainDialog.clearRoiSelection();
+				previousSelectedRoi = null;
+				return;
+			}
+
 			image.getRoi().setStrokeColor(Color.yellow);
+			previousSelectedRoi = image.getRoi();
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.updateRoisOnScreen();
