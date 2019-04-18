@@ -228,6 +228,9 @@ public class MainDialog extends ImageWindow {
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
     }
+    public void setPreviewWindowCheckBox(boolean value) {
+        this.chk_showPreview.setSelected(value);
+    }
 
     public static String PromptForFile() {
         OpenDialog od = new OpenDialog("Selezionare un'immagine");

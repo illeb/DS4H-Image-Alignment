@@ -4,6 +4,7 @@ import histology.BufferedImagesManager;
 import histology.maindialog.CustomCanvas;
 import histology.maindialog.OnMainDialogEventListener;
 import histology.previewdialog.event.ChangeImageEvent;
+import histology.previewdialog.event.CloseDialogEvent;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
@@ -11,10 +12,7 @@ import ij.gui.Roi;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
+import java.awt.event.*;
 
 public class PreviewDialog extends ImageWindow {
 
@@ -73,6 +71,12 @@ public class PreviewDialog extends ImageWindow {
             }
         });
 
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                listener.onPreviewDialogEvent(new CloseDialogEvent());
+            }
+        });
         scrollbar.addAdjustmentListener(e -> this.listener.onPreviewDialogEvent(new ChangeImageEvent(scrollbar.getValue())));
         this.listener = listener;
         pack();

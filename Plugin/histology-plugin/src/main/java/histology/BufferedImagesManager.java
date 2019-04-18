@@ -115,7 +115,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     public static class BufferedImage extends ImagePlus {
         private RoiManager  manager;
         private Roi[] roisBackup;
-        BufferedImage(String text, Image image, RoiManager  manager) {
+        public BufferedImage(String text, Image image, RoiManager manager) {
             super(text, image);
             this.manager = manager;
         }

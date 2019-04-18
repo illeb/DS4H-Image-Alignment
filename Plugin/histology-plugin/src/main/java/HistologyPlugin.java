@@ -1,18 +1,11 @@
-package histology;/*
- * To the extent possible under law, the ImageJ developers have waived
- * all copyright and related or neighboring rights to this tutorial code.
- *
- * See the CC0 1.0 Universal license for details:
- *     http://creativecommons.org/publicdomain/zero/1.0/
- */
-
-
+import histology.BufferedImagesManager;
 import histology.maindialog.MainDialog;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
 import histology.maindialog.OnMainDialogEventListener;
 import histology.maindialog.event.*;
 import histology.previewdialog.event.ChangeImageEvent;
+import histology.previewdialog.event.CloseDialogEvent;
 import histology.previewdialog.event.IPreviewDialogEvent;
 import ij.*;
 import ij.gui.*;
@@ -31,7 +24,7 @@ import java.util.Arrays;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>histology.HistologyPlugin")
+		menuPath = "Plugins>HistologyPlugin")
 public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImagesManager.BufferedImage image = null;
@@ -158,6 +151,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			BufferedImagesManager.BufferedImage image = manager.get(event.getIndex());
 			previewDialog.changeImage(image);
 			IJ.freeMemory();
+		}
+
+		if(dialogEvent instanceof CloseDialogEvent) {
+			mainDialog.setPreviewWindowCheckBox(false);
 		}
 	}
 }
