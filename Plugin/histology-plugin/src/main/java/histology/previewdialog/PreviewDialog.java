@@ -56,8 +56,9 @@ public class PreviewDialog extends ImageWindow {
         winc.weighty = 1;
         setLayout(wingb);
         add(all, winc);
+
         all.addMouseWheelListener(e ->{
-            if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
+            if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL && !e.isControlDown()) {
                 int totalScrollAmount = e.getUnitsToScroll() < 0 ? -1 : 1;
                 if(scrollbar.getValue() + totalScrollAmount > scrollbar.getMaximum()){
                    scrollbar.setValue(scrollbar.getMaximum());
