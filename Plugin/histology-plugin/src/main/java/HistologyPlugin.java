@@ -30,7 +30,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private BufferedImagesManager.BufferedImage image = null;
 	private PreviewDialog previewDialog;
 	private MainDialog mainDialog;
-	private Roi previousSelectedRoi;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -76,6 +75,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 	@Override
 	public void onMainDialogEvent(IMainDialogEvent dialogEvent) {
+		WindowManager.setCurrentWindow(image.getWindow());
 		if(dialogEvent instanceof PreviewImageEventMain) {
 			PreviewImageEventMain event = (PreviewImageEventMain)dialogEvent;
 			if(!event.getValue()) {
@@ -101,7 +101,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof DeleteEventMain){
-			WindowManager.setCurrentWindow(image.getWindow());
 		    DeleteEventMain event = (DeleteEventMain)dialogEvent;
 		    image.getManager().select(event.getRoiIndex());
 		    image.getManager().runCommand("Delete");
@@ -111,7 +110,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
         }
 
 		if(dialogEvent instanceof AddRoiEventMain) {
-			WindowManager.setCurrentWindow(image.getWindow());
 			AddRoiEventMain event = (AddRoiEventMain)dialogEvent;
 			OvalRoi roi = new OvalRoi (event.getClickCoords().x - 15, event.getClickCoords().y - 15, image.getWindow().getWidth() / 12, image.getWindow().getWidth() / 12);
 			roi.setCornerDiameter(30);
@@ -129,22 +127,21 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof SelectedRoiEventMain) {
-			WindowManager.setCurrentWindow(image.getWindow());
 			SelectedRoiEventMain event = (SelectedRoiEventMain)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
-			if(image.getRoi() == previousSelectedRoi){
-				image.getManager().deselect();
-				mainDialog.clearRoiSelection();
-				previousSelectedRoi = null;
-				return;
-			}
 
 			image.getRoi().setStrokeColor(Color.yellow);
-			previousSelectedRoi = image.getRoi();
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.updateRoisOnScreen();
+		}
+
+		if(dialogEvent instanceof DeselectedRoiEventMain) {
+			DeselectedRoiEventMain event = (DeselectedRoiEventMain)dialogEvent;
+			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
+			image.getManager().select(event.getRoiIndex());
+			mainDialog.clearRoiSelection();
 		}
 	}
 

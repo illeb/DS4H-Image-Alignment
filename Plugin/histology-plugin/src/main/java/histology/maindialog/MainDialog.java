@@ -170,30 +170,23 @@ public class MainDialog extends ImageWindow {
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
             this.eventListener.onMainDialogEvent(new DeleteEventMain(lst_rois.getSelectedIndex()));
-            lst_rois.setSelectedIndex(index);
+            lst_rois. (index);
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.NEXT)));
 
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
-            private static final long serialVersionUID = 1L;
-
-            boolean gestureStarted = false;
-
             @Override
             public void setSelectionInterval(int index0, int index1) {
-
-                if(!gestureStarted){
+                int previousIndexSelected = lst_rois.getSelectedIndex();
+                if(previousIndexSelected != index0) {
                     eventListener.onMainDialogEvent(new SelectedRoiEventMain(index0));
+                    btn_deleteRoi.setEnabled(true);
                     super.setSelectionInterval(index0, index1);
                 }
-                gestureStarted = true;
-            }
-
-            @Override
-            public void setValueIsAdjusting(boolean isAdjusting) {
-                if (isAdjusting == false) {
-                    gestureStarted = false;
+                else {
+                    eventListener.onMainDialogEvent(new DeselectedRoiEventMain(index0));
+                    btn_deleteRoi.setEnabled(false);
                 }
             }
         });
