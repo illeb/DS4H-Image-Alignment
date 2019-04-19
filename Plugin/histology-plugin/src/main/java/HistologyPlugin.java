@@ -83,7 +83,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			}
 
 			try {
-				previewDialog = new PreviewDialog(new BufferedImagesManager.BufferedImage("", image.duplicate().getImage(), image.getManager()), this, manager.getCurrentIndex(), manager.getNImages());
+				previewDialog = new PreviewDialog( manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
 				previewDialog.setVisible(true);
 			} catch (Exception e) { }
 		}
