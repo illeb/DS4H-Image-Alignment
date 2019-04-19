@@ -4,7 +4,6 @@ import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
 import histology.maindialog.OnMainDialogEventListener;
 import histology.maindialog.event.*;
-import histology.previewdialog.event.ChangeImageEvent;
 import histology.previewdialog.event.CloseDialogEvent;
 import histology.previewdialog.event.IPreviewDialogEvent;
 import ij.*;
@@ -76,8 +75,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	@Override
 	public void onMainDialogEvent(IMainDialogEvent dialogEvent) {
 		WindowManager.setCurrentWindow(image.getWindow());
-		if(dialogEvent instanceof PreviewImageEventMain) {
-			PreviewImageEventMain event = (PreviewImageEventMain)dialogEvent;
+		if(dialogEvent instanceof PreviewImageEvent) {
+			PreviewImageEvent event = (PreviewImageEvent)dialogEvent;
 			if(!event.getValue()) {
 				previewDialog.close();
 				return;
@@ -89,10 +88,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			} catch (Exception e) { }
 		}
 
-		if(dialogEvent instanceof ChangeImageEventMain) {
-		    ChangeImageEventMain event = (ChangeImageEventMain)dialogEvent;
+		if(dialogEvent instanceof ChangeImageEvent) {
+		    ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 			// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
-			image = event.getChangeDirection() == ChangeImageEventMain.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
+			image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
 			mainDialog.changeImage(image);
 			IJ.freeMemory();
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
@@ -100,8 +99,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
 		}
 
-		if(dialogEvent instanceof DeleteEventMain){
-		    DeleteEventMain event = (DeleteEventMain)dialogEvent;
+		if(dialogEvent instanceof DeleteEvent){
+		    DeleteEvent event = (DeleteEvent)dialogEvent;
 		    image.getManager().select(event.getRoiIndex());
 		    image.getManager().runCommand("Delete");
 		    mainDialog.changeImage(image);
@@ -109,8 +108,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				previewDialog.updateRoisOnScreen();
         }
 
-		if(dialogEvent instanceof AddRoiEventMain) {
-			AddRoiEventMain event = (AddRoiEventMain)dialogEvent;
+		if(dialogEvent instanceof AddRoiEvent) {
+			AddRoiEvent event = (AddRoiEvent)dialogEvent;
 			OvalRoi roi = new OvalRoi (event.getClickCoords().x - 15, event.getClickCoords().y - 15, image.getWindow().getWidth() / 12, image.getWindow().getWidth() / 12);
 			roi.setCornerDiameter(30);
 			roi.setFillColor(Color.red);
@@ -126,8 +125,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				previewDialog.updateRoisOnScreen();
 		}
 
-		if(dialogEvent instanceof SelectedRoiEventMain) {
-			SelectedRoiEventMain event = (SelectedRoiEventMain)dialogEvent;
+		if(dialogEvent instanceof SelectedRoiEvent) {
+			SelectedRoiEvent event = (SelectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
 
@@ -137,8 +136,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				previewDialog.updateRoisOnScreen();
 		}
 
-		if(dialogEvent instanceof DeselectedRoiEventMain) {
-			DeselectedRoiEventMain event = (DeselectedRoiEventMain)dialogEvent;
+		if(dialogEvent instanceof DeselectedRoiEvent) {
+			DeselectedRoiEvent event = (DeselectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
 			mainDialog.clearRoiSelection();
@@ -147,9 +146,9 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
-		if(dialogEvent instanceof ChangeImageEvent) {
+		if(dialogEvent instanceof histology.previewdialog.event.ChangeImageEvent) {
 			WindowManager.setCurrentWindow(image.getWindow());
-			ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
+			histology.previewdialog.event.ChangeImageEvent event = (histology.previewdialog.event.ChangeImageEvent)dialogEvent;
 			BufferedImagesManager.BufferedImage image = manager.get(event.getIndex());
 			previewDialog.changeImage(image);
 			IJ.freeMemory();

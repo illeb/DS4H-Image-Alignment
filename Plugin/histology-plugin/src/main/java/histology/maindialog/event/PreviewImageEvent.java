@@ -1,8 +1,8 @@
 package histology.maindialog.event;
 
-public class PreviewImageEventMain implements IMainDialogEvent {
+public class PreviewImageEvent implements IMainDialogEvent {
     private boolean show;
-    public PreviewImageEventMain(boolean show) {
+    public PreviewImageEvent(boolean show) {
         this.show = show;
     }
 

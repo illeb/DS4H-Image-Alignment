@@ -1,13 +1,13 @@
 package histology.maindialog.event;
 
-public class DeleteEventMain implements IMainDialogEvent {
+public class SelectedRoiEvent implements IMainDialogEvent {
     private int roiIndex;
-
-    public DeleteEventMain(int roiIndex) {
-        this.roiIndex = roiIndex;
+    public SelectedRoiEvent(int index) {
+        this.roiIndex = index;
     }
 
     public int getRoiIndex() {
         return this.roiIndex;
     }
+
 }

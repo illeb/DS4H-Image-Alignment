@@ -9,8 +9,6 @@ import ij.io.OpenDialog;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.MessageFormat;
@@ -166,26 +164,26 @@ public class MainDialog extends ImageWindow {
 
         this.eventListener = listener;
 
-        chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEventMain(chk_showPreview.isSelected())));
+        chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEvent(chk_showPreview.isSelected())));
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
-            this.eventListener.onMainDialogEvent(new DeleteEventMain(lst_rois.getSelectedIndex()));
-            lst_rois. (index);
+            this.eventListener.onMainDialogEvent(new DeleteEvent(lst_rois.getSelectedIndex()));
+            lst_rois.setSelectedIndex(index);
         });
-        btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.PREV)));
-        btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEventMain(ChangeImageEventMain.ChangeDirection.NEXT)));
+        btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
+        btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
 
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
             @Override
             public void setSelectionInterval(int index0, int index1) {
                 int previousIndexSelected = lst_rois.getSelectedIndex();
                 if(previousIndexSelected != index0) {
-                    eventListener.onMainDialogEvent(new SelectedRoiEventMain(index0));
+                    eventListener.onMainDialogEvent(new SelectedRoiEvent(index0));
                     btn_deleteRoi.setEnabled(true);
                     super.setSelectionInterval(index0, index1);
                 }
                 else {
-                    eventListener.onMainDialogEvent(new DeselectedRoiEventMain(index0));
+                    eventListener.onMainDialogEvent(new DeselectedRoiEvent(index0));
                     btn_deleteRoi.setEnabled(false);
                 }
             }
@@ -224,7 +222,7 @@ public class MainDialog extends ImageWindow {
                 if(!SwingUtilities.isRightMouseButton(e))
                     return;
                 Point clickCoords = canvas.getCursorLoc();
-                eventListener.onMainDialogEvent(new AddRoiEventMain(clickCoords));
+                eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
             }
         });
     }
