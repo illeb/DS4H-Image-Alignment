@@ -5,7 +5,6 @@ import histology.maindialog.event.*;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
-import ij.io.OpenDialog;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
@@ -32,9 +31,11 @@ public class MainDialog extends ImageWindow {
     private JButton btn_nextImage;
 
     private JList<String> lst_rois;
-    DefaultListModel<String> lst_rois_model = new DefaultListModel<>();
+    DefaultListModel<String> lst_rois_model;
 
     private BufferedImagesManager.BufferedImage image;
+
+    private boolean mouseOverCanvas;
 
     public MainDialog(ImagePlus plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
@@ -171,6 +172,28 @@ public class MainDialog extends ImageWindow {
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
 
+
+        // Markers addition handlers
+        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        manager.addKeyEventDispatcher(new KeyboardEventDispatcher());
+        canvas.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                mouseOverCanvas = true;
+                super.mouseEntered(e);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                mouseOverCanvas = false;
+                super.mouseExited(e);
+            }
+        });
+
+        // Rois list handling
+        lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        lst_rois_model = new DefaultListModel<>();
+        lst_rois.setModel(lst_rois_model);
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
             @Override
             public void setSelectionInterval(int index0, int index1) {
@@ -186,14 +209,11 @@ public class MainDialog extends ImageWindow {
                 }
             }
         });
-        lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        lst_rois.setModel(lst_rois_model);
-        setCanvasListener();
 
         pack();
     }
 
-    /**
+     /**
      * Change the actual image displayed in the main view, based on the given BufferedImage istance
      * @param image
      */
@@ -240,18 +260,14 @@ public class MainDialog extends ImageWindow {
         this.btn_prevImage.setEnabled(enabled);
     }
 
-    private void setCanvasListener() {
-        final CustomCanvas canvas = (CustomCanvas) getCanvas();
-        canvas.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // rendiamo il button di "quick annotaion" pari al click destro del mouse
-                if(!SwingUtilities.isRightMouseButton(e))
-                    return;
-                Point clickCoords = canvas.getCursorLoc();
+    private class KeyboardEventDispatcher implements KeyEventDispatcher {
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent e) {
+            if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_C && mouseOverCanvas) {
+                Point clickCoords = getCanvas().getCursorLoc();
                 eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
             }
-        });
+            return false;
+        }
     }
-
 }
