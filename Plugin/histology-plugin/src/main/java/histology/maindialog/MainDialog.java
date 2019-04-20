@@ -195,17 +195,29 @@ public class MainDialog extends ImageWindow {
         lst_rois_model = new DefaultListModel<>();
         lst_rois.setModel(lst_rois_model);
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
+            boolean gestureStarted = false;
             @Override
             public void setSelectionInterval(int index0, int index1) {
-                int previousIndexSelected = lst_rois.getSelectedIndex();
-                if(previousIndexSelected != index0) {
-                    eventListener.onMainDialogEvent(new SelectedRoiEvent(index0));
-                    btn_deleteRoi.setEnabled(true);
-                    super.setSelectionInterval(index0, index1);
+                if(!gestureStarted) {
+                    if (isSelectedIndex(index0)) {
+                        super.removeSelectionInterval(index0, index0);
+                        eventListener.onMainDialogEvent(new DeselectedRoiEvent(index0));
+                        btn_deleteRoi.setEnabled(false);
+                        return;
+                    }
+                    else{
+                        eventListener.onMainDialogEvent(new SelectedRoiEvent(index0));
+                        btn_deleteRoi.setEnabled(true);
+                        super.setSelectionInterval(index0, index1);
+                    }
                 }
-                else {
-                    eventListener.onMainDialogEvent(new DeselectedRoiEvent(index0));
-                    btn_deleteRoi.setEnabled(false);
+                gestureStarted = true;
+            }
+
+            @Override
+            public void setValueIsAdjusting(boolean isAdjusting) {
+                if (isAdjusting == false) {
+                    gestureStarted = false;
                 }
             }
         });
@@ -246,10 +258,6 @@ public class MainDialog extends ImageWindow {
 
     public void setPreviewWindowCheckBox(boolean value) {
         this.chk_showPreview.setSelected(value);
-    }
-
-    public void clearRoiSelection() {
-        lst_rois.clearSelection();
     }
 
     public void setNextImageButtonEnabled(boolean enabled) {

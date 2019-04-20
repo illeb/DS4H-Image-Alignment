@@ -140,7 +140,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			DeselectedRoiEvent event = (DeselectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
-			mainDialog.clearRoiSelection();
 		}
 	}
 
