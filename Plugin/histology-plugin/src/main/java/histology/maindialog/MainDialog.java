@@ -34,6 +34,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_nextImage;
 
     private JList<String> lst_rois;
+    DefaultListModel<String> lst_rois_model = new DefaultListModel<>();
 
     private BufferedImagesManager.BufferedImage image;
 
@@ -189,6 +190,7 @@ public class MainDialog extends ImageWindow {
             }
         });
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        lst_rois.setModel(lst_rois_model);
         setCanvasListener();
 
         pack();
@@ -227,15 +229,17 @@ public class MainDialog extends ImageWindow {
         });
     }
 
+    /**
+     * Update the Roi List based on the given RoiManager istance
+     * @param manager
+     */
     public void updateRoiList(RoiManager manager) {
-        DefaultListModel<String> model = new DefaultListModel<>();
+        lst_rois_model.removeAllElements();
         int idx = 0;
         for (Roi roi : manager.getRoisAsArray())
-            model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase(), (int)roi.getYBase()));
+            lst_rois_model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase(), (int)roi.getYBase()));
         manager.runCommand("Show All");
         manager.runCommand("show all with labels");
-        lst_rois.setModel(model);
-
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
     }
