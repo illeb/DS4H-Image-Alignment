@@ -15,7 +15,7 @@ import java.text.MessageFormat;
 
 public class MainDialog extends ImageWindow {
     private final OnMainDialogEventListener eventListener;
-    
+
     /** constraints for annotation panel */
     private GridBagConstraints annotationsConstraints = new GridBagConstraints();
 
@@ -206,6 +206,7 @@ public class MainDialog extends ImageWindow {
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
         this.updateRoiList(image.getManager());
+        this.pack();
     }
 
     /**
