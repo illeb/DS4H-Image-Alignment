@@ -15,11 +15,9 @@ import java.text.MessageFormat;
 
 public class MainDialog extends ImageWindow {
     private final OnMainDialogEventListener eventListener;
-
-
+    
     /** constraints for annotation panel */
     private GridBagConstraints annotationsConstraints = new GridBagConstraints();
-    /** Panel with class radio buttons and lists */
 
     private JPanel buttonsPanel = new JPanel();
 
@@ -37,7 +35,6 @@ public class MainDialog extends ImageWindow {
     DefaultListModel<String> lst_rois_model = new DefaultListModel<>();
 
     private BufferedImagesManager.BufferedImage image;
-
 
     public MainDialog(ImagePlus plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
@@ -196,14 +193,10 @@ public class MainDialog extends ImageWindow {
         pack();
     }
 
-    public void setNextImageButtonEnabled(boolean enabled) {
-        this.btn_nextImage.setEnabled(enabled);
-    }
-
-    public void setPrevImageButtonEnabled(boolean enabled) {
-        this.btn_prevImage.setEnabled(enabled);
-    }
-
+    /**
+     * Change the actual image displayed in the main view, based on the given BufferedImage istance
+     * @param image
+     */
     public void changeImage(BufferedImagesManager.BufferedImage image) {
         this.setImage(image);
         image.backupRois();
@@ -213,20 +206,6 @@ public class MainDialog extends ImageWindow {
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
         this.updateRoiList(image.getManager());
-    }
-
-    private void setCanvasListener() {
-        final CustomCanvas canvas = (CustomCanvas) getCanvas();
-        canvas.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // rendiamo il button di "quick annotaion" pari al click destro del mouse
-                if(!SwingUtilities.isRightMouseButton(e))
-                    return;
-                Point clickCoords = canvas.getCursorLoc();
-                eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
-            }
-        });
     }
 
     /**
@@ -252,10 +231,26 @@ public class MainDialog extends ImageWindow {
         lst_rois.clearSelection();
     }
 
-    public static String PromptForFile() {
-        OpenDialog od = new OpenDialog("Selezionare un'immagine");
-        String dir = od.getDirectory();
-        String name = od.getFileName();
-        return (dir + name);
+    public void setNextImageButtonEnabled(boolean enabled) {
+        this.btn_nextImage.setEnabled(enabled);
     }
+
+    public void setPrevImageButtonEnabled(boolean enabled) {
+        this.btn_prevImage.setEnabled(enabled);
+    }
+
+    private void setCanvasListener() {
+        final CustomCanvas canvas = (CustomCanvas) getCanvas();
+        canvas.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // rendiamo il button di "quick annotaion" pari al click destro del mouse
+                if(!SwingUtilities.isRightMouseButton(e))
+                    return;
+                Point clickCoords = canvas.getCursorLoc();
+                eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
+            }
+        });
+    }
+
 }

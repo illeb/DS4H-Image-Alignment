@@ -9,6 +9,7 @@ import histology.previewdialog.event.IPreviewDialogEvent;
 import ij.*;
 import ij.gui.*;
 
+import ij.io.OpenDialog;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -35,14 +36,13 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		HistologyPlugin plugin = new HistologyPlugin();
 		plugin.setContext(ij.getContext());
 		plugin.run();
-
 	}
 
 	@Override
 	public void run() {
 
 		// Chiediamo come prima cosa il file all'utente
-		String pathFile = MainDialog.PromptForFile();
+		String pathFile = promptForFile();
 		if (pathFile.equals("nullnull"))
 			System.exit(0);
 
@@ -157,6 +157,13 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		if(dialogEvent instanceof CloseDialogEvent) {
 			mainDialog.setPreviewWindowCheckBox(false);
 		}
+	}
+
+	private String promptForFile() {
+		OpenDialog od = new OpenDialog("Selezionare un'immagine");
+		String dir = od.getDirectory();
+		String name = od.getFileName();
+		return (dir + name);
 	}
 }
 
