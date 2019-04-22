@@ -103,7 +103,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		    DeleteEvent event = (DeleteEvent)dialogEvent;
 		    image.getManager().select(event.getRoiIndex());
 		    image.getManager().runCommand("Delete");
-		    mainDialog.changeImage(image);
+		    mainDialog.updateRoiList(image.getManager());
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.updateRoisOnScreen();
         }
