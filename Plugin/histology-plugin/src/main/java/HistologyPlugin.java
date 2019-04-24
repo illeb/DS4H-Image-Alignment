@@ -18,6 +18,7 @@ import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
 
+import javax.swing.*;
 import java.awt.*;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -44,7 +45,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		// Chiediamo come prima cosa il file all'utente
 		String pathFile = promptForFile();
 		if (pathFile.equals("nullnull"))
-			System.exit(0);
+			return;
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
@@ -57,7 +58,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setVisible(true);
 			mainDialog.pack();
 			this.mainDialog.setVisible(true);
-		} catch (Exception e) {
+
+			if(manager.isReducedImageMode())
+				JOptionPane.showMessageDialog(null, "Image size too large: image has been cropped for compatibility.");
+		}
+		catch (BufferedImagesManager.ImageOversizeException e) {
+			JOptionPane.showMessageDialog(null, "Cannot open the selected image: image exceed supported dimensions.");
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

@@ -24,8 +24,9 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     private BufferedImageReader imageBuffer;
     private List<RoiManager> roiManagers;
     private int imageIndex;
+    private boolean reducedImageMode;
     public String pathFile;
-    public BufferedImagesManager(String pathFile) throws IOException, FormatException {
+    public BufferedImagesManager(String pathFile) throws IOException, FormatException, ImageOversizeException {
         this.pathFile = pathFile;
         this.imageIndex = -1;
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
@@ -40,10 +41,29 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         catch (Exception exc) {
             throw new FormatException("Could not create OME-XML store.", exc);
         }
-        imageReader.setMetadataStore(metadata);
         imageReader.setId(pathFile);
-        imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
 
+        boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() > 2147483647L;
+        if(over2GBLimit) {
+            if(imageReader.getSeriesCount() <= 1)
+                throw new ImageOversizeException();
+
+            // Cycles all the avaiable series in search of an image with sustainable size
+            for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
+                imageReader.setSeries(i);
+                over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() > 2147483647L;
+
+                if(!over2GBLimit)
+                    this.reducedImageMode = true;
+            }
+
+            // after all cycles, if we did not found an alternative series of sustainable size, throw an error
+            if(!this.reducedImageMode)
+                throw new ImageOversizeException();
+        }
+
+
+        imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
         this.roiManagers = new ArrayList<>(imageBuffer.getImageCount());
         for(int i=0; i < imageBuffer.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
@@ -112,6 +132,13 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return imageBuffer.getImageCount();
     }
 
+    /**
+     * This flag indicates whenever the manger uses a reduced-size image for compatibility
+      */
+    public boolean isReducedImageMode() {
+        return this.reducedImageMode;
+    }
+
     public static class BufferedImage extends ImagePlus {
         private RoiManager  manager;
         private Roi[] roisBackup;
@@ -136,4 +163,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     public BufferedImage get(int index) {
         return this.getImage(index);
     }
+
+    public class ImageOversizeException extends Exception { }
 }
