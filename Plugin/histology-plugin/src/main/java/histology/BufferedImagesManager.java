@@ -42,8 +42,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
             throw new FormatException("Could not create OME-XML store.", exc);
         }
         imageReader.setId(pathFile);
-
-        boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() > 2147483647L;
+        boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE;
         if(over2GBLimit) {
             if(imageReader.getSeriesCount() <= 1)
                 throw new ImageOversizeException();
@@ -51,7 +50,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
             // Cycles all the avaiable series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
                 imageReader.setSeries(i);
-                over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() > 2147483647L;
+                over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE;
 
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
