@@ -10,6 +10,9 @@ import ij.*;
 import ij.gui.*;
 
 import ij.io.OpenDialog;
+import mpicbg.ij.TransformMeshMapping;
+import mpicbg.ij.util.Util;
+import mpicbg.models.*;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -20,7 +23,9 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
+import mpicbg.models.Point;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /** Loads and displays a dataset using the ImageJ API. */
@@ -67,6 +72,35 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 		catch (Exception e) {
 			e.printStackTrace();
+		}
+
+		final MovingLeastSquaresTransform t = new MovingLeastSquaresTransform();
+		try {
+			t.setModel( RigidModel2D.class );
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		t.setAlpha(1.0f);
+
+
+		// source: immagine 1
+		// template: immagine 2
+		final List<Point> sourcePoints = Util.pointRoiToPoints( ( PointRoi )source.getRoi() );
+		final List< Point > templatePoints = Util.pointRoiToPoints( ( PointRoi )template.getRoi() );
+
+		final int numMatches = Math.min( sourcePoints.size(), templatePoints.size() );
+		final ArrayList<PointMatch> matches = new ArrayList<>();
+		for ( int i = 0; i < numMatches; ++i )
+			matches.add( new PointMatch( sourcePoints.get( i ), templatePoints.get( i ) ) );
+		try
+		{
+			t.setMatches( matches );
+			mapping = new TransformMeshMapping<>(new CoordinateTransformMesh(t, meshResolution, source.getWidth(), source.getHeight()));
+		}
+		catch ( final Exception e )
+		{
+			IJ.showMessage( "Not enough landmarks selected to find a transformation model." );
+			return;
 		}
 	}
 
