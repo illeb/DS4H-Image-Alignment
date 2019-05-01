@@ -1,8 +1,11 @@
 package histology;
 
+import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import ij.process.ImageProcessor;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
@@ -10,6 +13,11 @@ import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
 import loci.formats.meta.MetadataStore;
 import loci.formats.services.OMEXMLService;
+import mpicbg.ij.Mapping;
+import mpicbg.ij.TransformMeshMapping;
+import mpicbg.ij.util.Util;
+import mpicbg.models.*;
+import mpicbg.models.Point;
 
 import java.awt.*;
 import java.io.IOException;
@@ -18,6 +26,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
+
+import mpicbg.models.Point;
+import mpicbg.models.PointMatch;
 
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
@@ -164,4 +176,58 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     public class ImageOversizeException extends Exception { }
+    Mapping< ? > mapping = null;
+    public void applyTransformation(int imageSourceIndex, int imageTargetIndex) {
+
+        final MovingLeastSquaresTransform t = new MovingLeastSquaresTransform();
+        try {
+            t.setModel( RigidModel2D.class );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        t.setAlpha(1.0f);
+        int meshResolution = 32;
+
+        BufferedImage source = this.getImage(imageSourceIndex);
+        BufferedImage template = this.getImage(imageTargetIndex);
+        final ImagePlus target = template.createImagePlus();
+
+        final ImageProcessor ipSource = source.getProcessor();
+        final ImageProcessor ipTarget = source.getProcessor().createProcessor( template.getWidth(), template.getHeight() );
+        // source: immagine 1
+        // template: immagine 2
+        final List<Point> sourcePoints = Arrays.stream(source.getManager().getRoisAsArray())
+                .map(roi -> new Point(new double[]{roi.getXBase(), roi.getYBase()}))
+                .collect(Collectors.toList());
+        final List<Point> templatePoints = Arrays.stream(template.getManager().getRoisAsArray())
+                .map(roi -> new Point(new double[]{roi.getXBase(), roi.getYBase()}))
+                .collect(Collectors.toList());
+
+        final int numMatches = Math.min( sourcePoints.size(), templatePoints.size() );
+        final ArrayList<PointMatch> matches = new ArrayList<>();
+        for ( int i = 0; i < numMatches; ++i )
+            matches.add( new PointMatch( sourcePoints.get( i ), templatePoints.get( i ) ) );
+        try
+        {
+            t.setMatches( matches );
+            this.mapping = new TransformMeshMapping<>(new CoordinateTransformMesh(t, meshResolution, source.getWidth(), source.getHeight()));
+        }
+        catch ( final Exception e )
+        {
+            IJ.showMessage( "Not enough landmarks selected to find a transformation model." );
+            return;
+        }
+
+        boolean interpolate = true;
+        if ( interpolate )
+        {
+            ipSource.setInterpolationMethod( ImageProcessor.BILINEAR );
+            mapping.mapInterpolated( ipSource, ipTarget );
+        }
+        else
+            mapping.map( ipSource, ipTarget );
+
+        target.setProcessor( "Transformed" + source.getTitle(), ipTarget );
+        target.show();
+    }
 }

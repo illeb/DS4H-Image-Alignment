@@ -74,34 +74,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			e.printStackTrace();
 		}
 
-		final MovingLeastSquaresTransform t = new MovingLeastSquaresTransform();
-		try {
-			t.setModel( RigidModel2D.class );
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		t.setAlpha(1.0f);
-
-
-		// source: immagine 1
-		// template: immagine 2
-		final List<Point> sourcePoints = Util.pointRoiToPoints( ( PointRoi )source.getRoi() );
-		final List< Point > templatePoints = Util.pointRoiToPoints( ( PointRoi )template.getRoi() );
-
-		final int numMatches = Math.min( sourcePoints.size(), templatePoints.size() );
-		final ArrayList<PointMatch> matches = new ArrayList<>();
-		for ( int i = 0; i < numMatches; ++i )
-			matches.add( new PointMatch( sourcePoints.get( i ), templatePoints.get( i ) ) );
-		try
-		{
-			t.setMatches( matches );
-			mapping = new TransformMeshMapping<>(new CoordinateTransformMesh(t, meshResolution, source.getWidth(), source.getHeight()));
-		}
-		catch ( final Exception e )
-		{
-			IJ.showMessage( "Not enough landmarks selected to find a transformation model." );
-			return;
-		}
 	}
 
 	@Override
@@ -185,6 +157,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			DeselectedRoiEvent event = (DeselectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
+		}
+
+		if(dialogEvent instanceof MergeEvent) {
+			manager.applyTransformation(0,1);
 		}
 	}
 
