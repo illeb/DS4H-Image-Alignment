@@ -5,6 +5,7 @@ import histology.maindialog.event.*;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
@@ -244,6 +245,8 @@ public class MainDialog extends ImageWindow {
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
         this.updateRoiList(image.getManager());
+        // Let's call the zoom plugin to scale the image to fit in the user window
+        new Zoom().run("scale");
         this.pack();
     }
 
