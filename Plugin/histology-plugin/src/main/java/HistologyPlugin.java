@@ -1,6 +1,5 @@
 import histology.BufferedImagesManager;
 import histology.LeastSquareImageTransformation;
-import histology.maindialog.ImagesToStackConverter;
 import histology.maindialog.MainDialog;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
@@ -13,10 +12,6 @@ import ij.gui.*;
 
 import ij.io.OpenDialog;
 import ij.plugin.ImagesToStack;
-import ij.process.ImageProcessor;
-import mpicbg.ij.TransformMeshMapping;
-import mpicbg.ij.util.Util;
-import mpicbg.models.*;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -27,7 +22,6 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
-import mpicbg.models.Point;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
