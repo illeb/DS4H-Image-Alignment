@@ -127,7 +127,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? image.getWidth() : Toolkit.getDefaultToolkit().getScreenSize().width;
 			roiWidth /= 12;
-			OvalRoi roi = new OvalRoi (event.getClickCoords().x - 15, event.getClickCoords().y - 15, roiWidth, roiWidth);
+			OvalRoi roi = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
 			roi.setCornerDiameter(30);
 			roi.setFillColor(Color.red);
 			roi.setStrokeColor(Color.blue);
