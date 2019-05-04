@@ -1,4 +1,6 @@
 import histology.BufferedImagesManager;
+import histology.LeastSquareImageTransformation;
+import histology.maindialog.ImagesToStackConverter;
 import histology.maindialog.MainDialog;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
@@ -10,6 +12,8 @@ import ij.*;
 import ij.gui.*;
 
 import ij.io.OpenDialog;
+import ij.plugin.ImagesToStack;
+import ij.process.ImageProcessor;
 import mpicbg.ij.TransformMeshMapping;
 import mpicbg.ij.util.Util;
 import mpicbg.models.*;
@@ -160,7 +164,12 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof MergeEvent) {
-			manager.applyTransformation(0,1);
+			ArrayList<ImagePlus> images = new ArrayList<>();
+			images.add(manager.get(0));
+			for(int i=1; i < manager.getNImages(); i++)
+				images.add(LeastSquareImageTransformation.transform(manager.get(i),manager.get(0)));
+			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+			stack.show("Merged images");
 		}
 	}
 
