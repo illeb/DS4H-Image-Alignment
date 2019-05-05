@@ -284,7 +284,7 @@ public class MainDialog extends ImageWindow {
     private class KeyboardEventDispatcher implements KeyEventDispatcher {
         @Override
         public boolean dispatchKeyEvent(KeyEvent e) {
-            if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_C && mouseOverCanvas) {
+            if (e.getID() == KeyEvent.KEY_RELEASED && e.getKeyCode() == KeyEvent.VK_C && mouseOverCanvas) {
                 Point clickCoords = getCanvas().getCursorLoc();
                 eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
             }
