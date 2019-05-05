@@ -1,23 +1,14 @@
 package histology;
 
-import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
-import ij.process.ImageProcessor;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
-import loci.formats.meta.MetadataStore;
 import loci.formats.services.OMEXMLService;
-import mpicbg.ij.Mapping;
-import mpicbg.ij.TransformMeshMapping;
-import mpicbg.ij.util.Util;
-import mpicbg.models.*;
-import mpicbg.models.Point;
 
 import java.awt.*;
 import java.io.IOException;
@@ -26,10 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.stream.Collectors;
-
-import mpicbg.models.Point;
-import mpicbg.models.PointMatch;
 
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
@@ -43,12 +30,10 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         this.imageIndex = -1;
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
 
-        MetadataStore metadata;
-
         try {
             ServiceFactory factory = new ServiceFactory();
             OMEXMLService service = factory.getInstance(OMEXMLService.class);
-            metadata = service.createOMEXMLMetadata();
+            service.createOMEXMLMetadata();
         }
         catch (Exception exc) {
             throw new FormatException("Could not create OME-XML store.", exc);
@@ -173,6 +158,10 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     public BufferedImage get(int index) {
         return this.getImage(index);
+    }
+
+    public List<RoiManager> getRoiManagers() {
+        return roiManagers;
     }
 
     public class ImageOversizeException extends Exception { }

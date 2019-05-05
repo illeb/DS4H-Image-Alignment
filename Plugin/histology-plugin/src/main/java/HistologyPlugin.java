@@ -25,6 +25,8 @@ import java.awt.*;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -111,13 +113,17 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
 		}
 
-		if(dialogEvent instanceof DeleteEvent){
-		    DeleteEvent event = (DeleteEvent)dialogEvent;
+		if(dialogEvent instanceof DeleteRoiEvent){
+		    DeleteRoiEvent event = (DeleteRoiEvent)dialogEvent;
 		    image.getManager().select(event.getRoiIndex());
 		    image.getManager().runCommand("Delete");
 		    mainDialog.updateRoiList(image.getManager());
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.updateRoisOnScreen();
+
+			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
+			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
+			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && roisNumber.stream().distinct().count() == 1);
         }
 
 		if(dialogEvent instanceof AddRoiEvent) {
@@ -129,7 +135,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			roi.setCornerDiameter(30);
 			roi.setFillColor(Color.red);
 			roi.setStrokeColor(Color.blue);
-			roi.setStrokeWidth(3);
+			roi.setStrokeWidth(10);
 			roi.setImage(image);
 			image.getManager().add(image, roi, 0);
 
@@ -138,6 +144,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			image.getManager().runCommand("show all with labels");
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.updateRoisOnScreen();
+
+			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
+			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
+			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && roisNumber.stream().distinct().count() == 1);
 		}
 
 		if(dialogEvent instanceof SelectedRoiEvent) {

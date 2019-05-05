@@ -30,7 +30,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_deleteRoi;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    private JButton btn_mergeImage;
+    private JButton btn_mergeImages;
 
     private JList<String> lst_rois;
     DefaultListModel<String> lst_rois_model;
@@ -57,9 +57,9 @@ public class MainDialog extends ImageWindow {
         btn_nextImage = new JButton ("NEXT IMAGE");
         btn_nextImage.setToolTipText("Select next image in the stack");
 
-        btn_mergeImage = new JButton ("MERGE");
-        btn_mergeImage.setToolTipText("Merge the images based on the added landmarks");
-
+        btn_mergeImages = new JButton ("MERGE");
+        btn_mergeImages.setToolTipText("Merge the images based on the added landmarks");
+        btn_mergeImages.setEnabled(false);
 
         // Remove the canvas from the window, to add it later
         removeAll();
@@ -113,7 +113,7 @@ public class MainDialog extends ImageWindow {
         actionsConstraints.gridy++;
         actionsJPanel.add(btn_nextImage, actionsConstraints);
         actionsConstraints.gridy++;
-        actionsJPanel.add(btn_mergeImage, actionsConstraints);
+        actionsJPanel.add(btn_mergeImages, actionsConstraints);
         actionsConstraints.gridy++;
 
         // Buttons panel (including training and options)
@@ -173,12 +173,12 @@ public class MainDialog extends ImageWindow {
         chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEvent(chk_showPreview.isSelected())));
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
-            this.eventListener.onMainDialogEvent(new DeleteEvent(lst_rois.getSelectedIndex()));
+            this.eventListener.onMainDialogEvent(new DeleteRoiEvent(lst_rois.getSelectedIndex()));
             lst_rois.setSelectedIndex(index);
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-        btn_mergeImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new MergeEvent()));
+        btn_mergeImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new MergeEvent()));
 
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -275,6 +275,10 @@ public class MainDialog extends ImageWindow {
 
     public void setPrevImageButtonEnabled(boolean enabled) {
         this.btn_prevImage.setEnabled(enabled);
+    }
+
+    public void setMergeButtonEnabled(boolean enabled) {
+        this.btn_mergeImages.setEnabled(enabled);
     }
 
     private class KeyboardEventDispatcher implements KeyEventDispatcher {

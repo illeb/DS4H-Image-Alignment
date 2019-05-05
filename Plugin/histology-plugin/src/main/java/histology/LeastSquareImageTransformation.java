@@ -56,7 +56,7 @@ public class LeastSquareImageTransformation {
         boolean interpolate = true;
         if ( interpolate )
         {
-            ipSource.setInterpolationMethod( ImageProcessor.BILINEAR );
+            ipSource.setInterpolationMethod( ImageProcessor.BICUBIC );
             mapping.mapInterpolated( ipSource, ipTarget );
         }
         else
