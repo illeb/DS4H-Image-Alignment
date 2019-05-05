@@ -1,8 +1,11 @@
 package histology;
 
+import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import ij.process.ImageProcessor;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
@@ -10,6 +13,11 @@ import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
 import loci.formats.meta.MetadataStore;
 import loci.formats.services.OMEXMLService;
+import mpicbg.ij.Mapping;
+import mpicbg.ij.TransformMeshMapping;
+import mpicbg.ij.util.Util;
+import mpicbg.models.*;
+import mpicbg.models.Point;
 
 import java.awt.*;
 import java.io.IOException;
@@ -18,6 +26,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
+
+import mpicbg.models.Point;
+import mpicbg.models.PointMatch;
 
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
 

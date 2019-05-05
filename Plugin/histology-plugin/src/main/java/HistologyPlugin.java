@@ -1,4 +1,5 @@
 import histology.BufferedImagesManager;
+import histology.LeastSquareImageTransformation;
 import histology.maindialog.MainDialog;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
@@ -10,6 +11,7 @@ import ij.*;
 import ij.gui.*;
 
 import ij.io.OpenDialog;
+import ij.plugin.ImagesToStack;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -21,6 +23,7 @@ import net.imagej.ImageJ;
 import javax.swing.*;
 import java.awt.*;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /** Loads and displays a dataset using the ImageJ API. */
@@ -68,6 +71,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+
 	}
 
 	@Override
@@ -121,7 +125,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? image.getWidth() : Toolkit.getDefaultToolkit().getScreenSize().width;
 			roiWidth /= 12;
-			OvalRoi roi = new OvalRoi (event.getClickCoords().x - 15, event.getClickCoords().y - 15, roiWidth, roiWidth);
+			OvalRoi roi = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
 			roi.setCornerDiameter(30);
 			roi.setFillColor(Color.red);
 			roi.setStrokeColor(Color.blue);
@@ -151,6 +155,15 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			DeselectedRoiEvent event = (DeselectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
+		}
+
+		if(dialogEvent instanceof MergeEvent) {
+			ArrayList<ImagePlus> images = new ArrayList<>();
+			images.add(manager.get(0));
+			for(int i=1; i < manager.getNImages(); i++)
+				images.add(LeastSquareImageTransformation.transform(manager.get(i),manager.get(0)));
+			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+			stack.show("Merged images");
 		}
 	}
 

@@ -5,6 +5,7 @@ import histology.maindialog.event.*;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
@@ -29,6 +30,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_deleteRoi;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
+    private JButton btn_mergeImage;
 
     private JList<String> lst_rois;
     DefaultListModel<String> lst_rois_model;
@@ -54,6 +56,9 @@ public class MainDialog extends ImageWindow {
 
         btn_nextImage = new JButton ("NEXT IMAGE");
         btn_nextImage.setToolTipText("Select next image in the stack");
+
+        btn_mergeImage = new JButton ("MERGE");
+        btn_mergeImage.setToolTipText("Merge the images based on the added landmarks");
 
 
         // Remove the canvas from the window, to add it later
@@ -107,6 +112,8 @@ public class MainDialog extends ImageWindow {
         actionsJPanel.add(btn_prevImage, actionsConstraints);
         actionsConstraints.gridy++;
         actionsJPanel.add(btn_nextImage, actionsConstraints);
+        actionsConstraints.gridy++;
+        actionsJPanel.add(btn_mergeImage, actionsConstraints);
         actionsConstraints.gridy++;
 
         // Buttons panel (including training and options)
@@ -171,7 +178,7 @@ public class MainDialog extends ImageWindow {
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-
+        btn_mergeImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new MergeEvent()));
 
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -238,6 +245,8 @@ public class MainDialog extends ImageWindow {
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
         this.updateRoiList(image.getManager());
+        // Let's call the zoom plugin to scale the image to fit in the user window
+        new Zoom().run("scale");
         this.pack();
     }
 
