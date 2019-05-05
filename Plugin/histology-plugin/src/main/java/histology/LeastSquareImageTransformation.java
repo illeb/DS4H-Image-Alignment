@@ -21,7 +21,7 @@ public class LeastSquareImageTransformation {
         Mapping<?> mapping;
         final MovingLeastSquaresTransform t = new MovingLeastSquaresTransform();
         try {
-            t.setModel( RigidModel2D.class );
+            t.setModel( AffineModel2D.class );
         } catch (Exception e) {
             e.printStackTrace();
         }
