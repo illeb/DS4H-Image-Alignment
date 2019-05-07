@@ -1,5 +1,6 @@
 import histology.BufferedImagesManager;
 import histology.LeastSquareImageTransformation;
+import histology.LoadingDialog;
 import histology.maindialog.MainDialog;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
@@ -36,6 +37,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private BufferedImagesManager manager;
 	private BufferedImagesManager.BufferedImage image = null;
 	private PreviewDialog previewDialog;
+	private LoadingDialog loadingDialog;
 	private MainDialog mainDialog;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
@@ -68,6 +70,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	public void onMainDialogEvent(IMainDialogEvent dialogEvent) {
 		WindowManager.setCurrentWindow(image.getWindow());
 		if(dialogEvent instanceof PreviewImageEvent) {
+			loadingDialog.setVisible(true);
 			PreviewImageEvent event = (PreviewImageEvent)dialogEvent;
 			if(!event.getValue()) {
 				previewDialog.close();
@@ -78,17 +81,21 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				previewDialog = new PreviewDialog( manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
 				previewDialog.setVisible(true);
 			} catch (Exception e) { }
+			loadingDialog.setVisible(false);
 		}
 
 		if(dialogEvent instanceof ChangeImageEvent) {
+			loadingDialog.setVisible(true);
 		    ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 			// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 			image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
+
 			mainDialog.changeImage(image);
 			IJ.freeMemory();
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
 			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+			loadingDialog.setVisible(false);
 		}
 
 		if(dialogEvent instanceof DeleteRoiEvent){
@@ -204,6 +211,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 * Initialize the plugin opening the file specified in the mandatory param
 	 */
 	public void initialize(String pathFile) {
+		this.loadingDialog = new LoadingDialog();
+		loadingDialog.setVisible(true);
 		try {
 			manager = new BufferedImagesManager(pathFile);
 			image = manager.next();
@@ -225,6 +234,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+		loadingDialog.setVisible(false);
 	}
 
 	private String promptForFile() {
@@ -240,6 +250,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private void disposeAll() {
 		try {
 			this.mainDialog.dispose();
+			this.loadingDialog.dispose();
 			if(this.previewDialog != null)
 				this.previewDialog.dispose();
 			this.manager.dispose();
