@@ -132,10 +132,15 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? image.getWidth() : Toolkit.getDefaultToolkit().getScreenSize().width;
 			roiWidth /= 12;
 			OvalRoi roi = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
-			roi.setCornerDiameter(30);
+			roi.setCornerDiameter(10);
 			roi.setFillColor(Color.red);
 			roi.setStrokeColor(Color.blue);
-			roi.setStrokeWidth(10);
+
+			// get roughly the 0,25% of the width of the image as stroke width of th rois added.
+			// If the resultant value is too small, set it as the minimum value
+			int strokeWidth = (int) (image.getWidth() * 0.0025) > 3 ? (int) (image.getWidth() * 0.0025) : 3;
+			roi.setStrokeWidth(strokeWidth);
+
 			roi.setImage(image);
 			image.getManager().add(image, roi, 0);
 
