@@ -16,6 +16,7 @@ import java.text.MessageFormat;
 public class MainDialog extends ImageWindow {
     private final OnMainDialogEventListener eventListener;
 
+    MenuBar menuBar;
     /** constraints for annotation panel */
     private GridBagConstraints annotationsConstraints = new GridBagConstraints();
 
@@ -229,6 +230,20 @@ public class MainDialog extends ImageWindow {
             }
         });
 
+
+        menuBar = new MenuBar();
+
+        Menu fileMenu = new Menu("File");
+        MenuItem menuItem = new MenuItem("Open file...");
+        menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new OpenFileEvent()));
+        fileMenu.add(menuItem);
+        fileMenu.addSeparator();
+        menuItem = new MenuItem("Exit");
+        menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new ExitEvent()));
+        fileMenu.add(menuItem);
+
+        menuBar.add(fileMenu);
+        this.setMenuBar(menuBar);
         pack();
     }
 

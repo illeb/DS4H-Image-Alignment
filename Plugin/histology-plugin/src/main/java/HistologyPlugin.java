@@ -22,6 +22,7 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,34 +47,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 	@Override
 	public void run() {
-
 		// Chiediamo come prima cosa il file all'utente
 		String pathFile = promptForFile();
 		if (pathFile.equals("nullnull"))
 			return;
-
-		try {
-			manager = new BufferedImagesManager(pathFile);
-			image = manager.next();
-			mainDialog = new MainDialog(image, this);
-			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
-			mainDialog.setNextImageButtonEnabled(manager.hasNext());
-			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
-
-			mainDialog.setVisible(true);
-			mainDialog.pack();
-			this.mainDialog.setVisible(true);
-
-			if(manager.isReducedImageMode())
-				JOptionPane.showMessageDialog(null, "Image size too large: image has been cropped for compatibility.");
-		}
-		catch (BufferedImagesManager.ImageOversizeException e) {
-			JOptionPane.showMessageDialog(null, "Cannot open the selected image: image exceed supported dimensions.");
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		this.initialize(pathFile);
 	}
 
 	@Override
@@ -180,6 +158,31 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 			stack.show("Merged images");
 		}
+
+		if(dialogEvent instanceof OpenFileEvent || dialogEvent instanceof ExitEvent) {
+			boolean roisPresent = manager.getRoiManagers().stream().filter(manager -> manager.getRoisAsArray().length != 0).count() > 0;
+			if(roisPresent){
+				String[] buttons = { "Yes", "No"};
+				String message = dialogEvent instanceof OpenFileEvent ? "This will replace the existing image. Proceed anyway?" : "You will lose the existing added landmarks. Proceed anyway?";
+				int answer = JOptionPane.showOptionDialog(null, message, "Careful now",
+						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
+
+				if(answer == 1)
+					return;
+			}
+
+			if(dialogEvent instanceof OpenFileEvent){
+				String pathFile = promptForFile();
+				if (pathFile.equals("nullnull"))
+					return;
+				this.disposeAll();
+				this.initialize(pathFile);
+			}
+			else {
+				disposeAll();
+				System.exit(0);
+			}
+		}
 	}
 
 	@Override
@@ -197,11 +200,53 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 	}
 
+	/**
+	 * Initialize the plugin opening the file specified in the mandatory param
+	 */
+	public void initialize(String pathFile) {
+		try {
+			manager = new BufferedImagesManager(pathFile);
+			image = manager.next();
+			mainDialog = new MainDialog(image, this);
+			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
+			mainDialog.setNextImageButtonEnabled(manager.hasNext());
+			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+
+			mainDialog.setVisible(true);
+			mainDialog.pack();
+			this.mainDialog.setVisible(true);
+
+			if(manager.isReducedImageMode())
+				JOptionPane.showMessageDialog(null, "Image size too large: image has been cropped for compatibility.");
+		}
+		catch (BufferedImagesManager.ImageOversizeException e) {
+			JOptionPane.showMessageDialog(null, "Cannot open the selected image: image exceed supported dimensions.");
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	private String promptForFile() {
 		OpenDialog od = new OpenDialog("Selezionare un'immagine");
 		String dir = od.getDirectory();
 		String name = od.getFileName();
 		return (dir + name);
+	}
+
+	/**
+	 * Dispose all the opened workload objects.
+	 */
+	private void disposeAll() {
+		try {
+			this.mainDialog.dispose();
+			if(this.previewDialog != null)
+				this.previewDialog.dispose();
+			this.manager.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		IJ.freeMemory();
 	}
 }
 

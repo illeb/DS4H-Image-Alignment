@@ -135,6 +135,11 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return this.reducedImageMode;
     }
 
+    public void dispose() throws IOException {
+        this.getRoiManagers().forEach(Window::dispose);
+        this.imageBuffer.close();
+    }
+
     public static class BufferedImage extends ImagePlus {
         private RoiManager  manager;
         private Roi[] roisBackup;
