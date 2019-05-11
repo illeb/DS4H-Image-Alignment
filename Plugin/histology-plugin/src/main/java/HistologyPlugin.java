@@ -1,3 +1,4 @@
+import histology.AboutDialog;
 import histology.BufferedImagesManager;
 import histology.LeastSquareImageTransformation;
 import histology.LoadingDialog;
@@ -38,6 +39,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private BufferedImagesManager.BufferedImage image = null;
 	private PreviewDialog previewDialog;
 	private LoadingDialog loadingDialog;
+	private AboutDialog aboutDialog;
 	private MainDialog mainDialog;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
@@ -194,6 +196,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				System.exit(0);
 			}
 		}
+
+		if(dialogEvent instanceof OpenAboutEvent) {
+			this.aboutDialog.setVisible(true);
+		}
 	}
 
 	@Override
@@ -219,6 +225,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 * Initialize the plugin opening the file specified in the mandatory param
 	 */
 	public void initialize(String pathFile) {
+		this.aboutDialog = new AboutDialog();
+		this.aboutDialog.setVisible(true);
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
 		try {

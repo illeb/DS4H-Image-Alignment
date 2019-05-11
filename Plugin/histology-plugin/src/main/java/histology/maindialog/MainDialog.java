@@ -242,7 +242,13 @@ public class MainDialog extends ImageWindow {
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new ExitEvent()));
         fileMenu.add(menuItem);
 
+        Menu aboutMenu = new Menu("?");
+        menuItem = new MenuItem("About...");
+        menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new OpenAboutEvent()));
+        aboutMenu.add(menuItem);
+
         menuBar.add(fileMenu);
+        menuBar.add(aboutMenu);
         this.setMenuBar(menuBar);
         pack();
     }
