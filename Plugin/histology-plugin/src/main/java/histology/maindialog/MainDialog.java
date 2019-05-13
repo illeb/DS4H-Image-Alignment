@@ -4,6 +4,7 @@ import histology.BufferedImagesManager;
 import histology.maindialog.event.*;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
+import ij.gui.OvalRoi;
 import ij.gui.Roi;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
@@ -279,7 +280,8 @@ public class MainDialog extends ImageWindow {
         lst_rois_model.removeAllElements();
         int idx = 0;
         for (Roi roi : manager.getRoisAsArray())
-            lst_rois_model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase(), (int)roi.getYBase()));
+            lst_rois_model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase() + (int)(roi.getFloatWidth() / 2), (int)roi.getYBase() + (int)(roi.getFloatHeight() / 2)));
+
         manager.runCommand("Show All");
         manager.runCommand("show all with labels");
         if(lst_rois.getSelectedIndex() == -1)

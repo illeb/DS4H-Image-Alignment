@@ -226,7 +226,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 */
 	public void initialize(String pathFile) {
 		this.aboutDialog = new AboutDialog();
-		this.aboutDialog.setVisible(true);
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
 		try {
