@@ -17,6 +17,7 @@ public class AboutDialog extends JDialog {
     private JLabel lbl_supervisor1;
     private JLabel lbl_supervisor2;
     private JLabel lbl_author1;
+    private JPanel pnl_credits;
 
     public AboutDialog() {
         setContentPane(contentPane);
@@ -77,6 +78,7 @@ public class AboutDialog extends JDialog {
                 }
             }
         });
+
     }
 
     @Override
@@ -123,5 +125,8 @@ public class AboutDialog extends JDialog {
 
         lbl_credits = new JLabel();
         lbl_credits.setText("<html><body>Made by: Stefano Belli<br>With the supervision of: Prof. Antonella Carbonaro && Prof. Alberto Piccinini</body></html>");
+
+        pnl_credits = new JPanel();
+        pnl_credits.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
     }
 }
