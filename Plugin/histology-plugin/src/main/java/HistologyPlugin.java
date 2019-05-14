@@ -24,7 +24,11 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +45,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
 	private MainDialog mainDialog;
+
+	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
+	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
+	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \\\"Maximum Memory\\\" to, at most, 1000 MB less than your computer's total RAM).\\n\", \"Error: insufficient memory\"";
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -225,9 +233,17 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 * Initialize the plugin opening the file specified in the mandatory param
 	 */
 	public void initialize(String pathFile) {
+
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+			if(e instanceof  OutOfMemoryError){
+				JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+				System.exit(0);
+			}
+		});
 		this.aboutDialog = new AboutDialog();
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
+
 		try {
 			manager = new BufferedImagesManager(pathFile);
 			image = manager.next();
@@ -240,10 +256,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setVisible(true);
 
 			if(manager.isReducedImageMode())
-				JOptionPane.showMessageDialog(null, "Image size too large: image has been cropped for compatibility.");
+				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE);
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
-			JOptionPane.showMessageDialog(null, "Cannot open the selected image: image exceed supported dimensions.");
+			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -264,6 +280,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private void disposeAll() {
 		try {
 			this.mainDialog.dispose();
+			this.loadingDialog.setVisible(false);
 			this.loadingDialog.dispose();
 			if(this.previewDialog != null)
 				this.previewDialog.dispose();

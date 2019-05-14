@@ -36,13 +36,13 @@ public class MainDialog extends ImageWindow {
     private JButton btn_mergeImages;
 
     private JList<String> lst_rois;
-    DefaultListModel<String> lst_rois_model;
+    private DefaultListModel<String> lst_rois_model;
 
     private BufferedImagesManager.BufferedImage image;
 
     private boolean mouseOverCanvas;
 
-    Rectangle oldRect = null;
+    private Rectangle oldRect = null;
     public MainDialog(BufferedImagesManager.BufferedImage plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
         this.image = plus;
