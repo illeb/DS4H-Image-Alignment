@@ -8,6 +8,7 @@ import ij.gui.OvalRoi;
 import ij.gui.Roi;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
+import org.w3c.dom.css.Rect;
 
 import javax.swing.*;
 import java.awt.*;
@@ -41,8 +42,10 @@ public class MainDialog extends ImageWindow {
 
     private boolean mouseOverCanvas;
 
-    public MainDialog(ImagePlus plus, OnMainDialogEventListener listener) {
+    Rectangle oldRect = null;
+    public MainDialog(BufferedImagesManager.BufferedImage plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
+        this.image = plus;
 
         final CustomCanvas canvas = (CustomCanvas) getCanvas();
 
@@ -185,7 +188,23 @@ public class MainDialog extends ImageWindow {
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         manager.addKeyEventDispatcher(new KeyboardEventDispatcher());
+        canvas.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                super.mouseDragged(e);
+                checkRoi();
+            }
+
+            private void checkRoi() {
+                Rectangle bounds = getImagePlus().getRoi().getBounds();
+                if (!bounds.equals(oldRect)) {
+                    refreshList(image.getManager());
+                    oldRect = (Rectangle)bounds.clone();
+                }
+            }
+        });
         canvas.addMouseListener(new MouseAdapter() {
+
             @Override
             public void mouseEntered(MouseEvent e) {
                 mouseOverCanvas = true;
@@ -198,7 +217,6 @@ public class MainDialog extends ImageWindow {
                 super.mouseExited(e);
             }
         });
-
         // Rois list handling
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         lst_rois_model = new DefaultListModel<>();
@@ -277,15 +295,19 @@ public class MainDialog extends ImageWindow {
      * @param manager
      */
     public void updateRoiList(RoiManager manager) {
+        this.refreshList(manager);
+        manager.runCommand("Show All");
+        manager.runCommand("show all with labels");
+        if(lst_rois.getSelectedIndex() == -1)
+            btn_deleteRoi.setEnabled(false);
+    }
+
+    private void refreshList(RoiManager manager) {
         lst_rois_model.removeAllElements();
         int idx = 0;
         for (Roi roi : manager.getRoisAsArray())
             lst_rois_model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase() + (int)(roi.getFloatWidth() / 2), (int)roi.getYBase() + (int)(roi.getFloatHeight() / 2)));
 
-        manager.runCommand("Show All");
-        manager.runCommand("show all with labels");
-        if(lst_rois.getSelectedIndex() == -1)
-            btn_deleteRoi.setEnabled(false);
     }
 
     public void setPreviewWindowCheckBox(boolean value) {
