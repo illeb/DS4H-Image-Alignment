@@ -47,6 +47,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private MainDialog mainDialog;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
+	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: merging operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \\\"Maximum Memory\\\" to, at most, 1000 MB less than your computer's total RAM).\\n\", \"Error: insufficient memory\"";
 	public static void main(final String... args) {
@@ -255,8 +256,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.pack();
 			mainDialog.setVisible(true);
 
+			this.loadingDialog.hideDialog();
 			if(manager.isReducedImageMode())
-				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE);
+				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
+			if(manager.getNImages() == 1)
+				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
@@ -264,7 +268,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		this.loadingDialog.hideDialog();
 	}
 
 	private String promptForFile() {
@@ -280,7 +283,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private void disposeAll() {
 		try {
 			this.mainDialog.dispose();
-			this.loadingDialog.setVisible(false);
+			this.loadingDialog.hideDialog();
 			this.loadingDialog.dispose();
 			if(this.previewDialog != null)
 				this.previewDialog.dispose();

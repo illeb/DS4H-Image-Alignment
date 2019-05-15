@@ -58,7 +58,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
                 throw new ImageOversizeException();
         }
 
-
         imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
         this.roiManagers = new ArrayList<>(imageBuffer.getImageCount());
         for(int i=0; i < imageBuffer.getImageCount(); i++)
