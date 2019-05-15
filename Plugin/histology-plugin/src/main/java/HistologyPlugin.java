@@ -3,6 +3,11 @@ import histology.BufferedImagesManager;
 import histology.LeastSquareImageTransformation;
 import histology.LoadingDialog;
 import histology.maindialog.MainDialog;
+import histology.mergedialog.MergeDialog;
+import histology.mergedialog.OnMergeDialogEventListener;
+import histology.mergedialog.event.IMergeDialogEvent;
+import histology.mergedialog.event.ReuseImageEvent;
+import histology.mergedialog.event.SaveEvent;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
 import histology.maindialog.OnMainDialogEventListener;
@@ -12,8 +17,11 @@ import histology.previewdialog.event.IPreviewDialogEvent;
 import ij.*;
 import ij.gui.*;
 
+import ij.io.FileSaver;
 import ij.io.OpenDialog;
+import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
+import loci.plugins.out.Exporter;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -38,17 +46,23 @@ import java.util.stream.Collectors;
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>HistologyPlugin")
-public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener {
+public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnMergeDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImagesManager.BufferedImage image = null;
+	private MainDialog mainDialog;
 	private PreviewDialog previewDialog;
+	private MergeDialog mergeDialog;
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
-	private MainDialog mainDialog;
+
+	private String mergedImagePath = "";
+	private boolean mergedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
 	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: merging operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
+	static private String MERGED_IMAGE_NOT_SAVED_MESSAGE  = "Merged image not saved: are you sure you want to exit without saving?";
+	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \\\"Maximum Memory\\\" to, at most, 1000 MB less than your computer's total RAM).\\n\", \"Error: insufficient memory\"";
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
@@ -177,7 +191,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			for(int i=1; i < manager.getNImages(); i++)
 				images.add(LeastSquareImageTransformation.transform(manager.get(i),manager.get(0)));
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-			stack.show("Merged images");
+			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
+			new FileSaver(stack).saveAsTiff(mergedImagePath);
+			mergeDialog = new MergeDialog(stack, this);
+			mergeDialog.pack();
+			mergeDialog.setVisible(true);
 		}
 
 		if(dialogEvent instanceof OpenFileEvent || dialogEvent instanceof ExitEvent) {
@@ -229,6 +247,37 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 	}
 
+	@Override
+	public void onMergeDialogEventListener(IMergeDialogEvent dialogEvent) {
+
+		if(dialogEvent instanceof SaveEvent) {
+			SaveDialog saveDialog = new SaveDialog("Save as", "merged", ".tiff");
+			if (saveDialog.getFileName()==null)
+				return;
+			String path = saveDialog.getDirectory()+saveDialog.getFileName();
+			new FileSaver(mergeDialog.getImagePlus()).saveAsTiff(path);
+			JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
+			this.mergedImageSaved = true;
+		}
+
+		if(dialogEvent instanceof ReuseImageEvent) {
+			this.disposeAll();
+			this.initialize(mergedImagePath);
+		}
+
+		if(dialogEvent instanceof histology.mergedialog.event.ExitEvent) {
+			if(mergedImageSaved == false) {
+				String[] buttons = { "Yes", "No"};
+				int answer = JOptionPane.showOptionDialog(null, MERGED_IMAGE_NOT_SAVED_MESSAGE, "Careful now",
+						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
+				if(answer == 1)
+					return;
+			}
+			mergeDialog.setVisible(false);
+			mergeDialog.dispose();
+		}
+	}
+
 	/**
 	 * Initialize the plugin opening the file specified in the mandatory param
 	 */
@@ -243,6 +292,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.aboutDialog = new AboutDialog();
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
+		mergedImageSaved = false;
+		mergedImagePath = "";
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
@@ -270,7 +321,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	}
 
 	private String promptForFile() {
-		OpenDialog od = new OpenDialog("Selezionare un'immagine");
+		OpenDialog od = new OpenDialog("Select an image");
 		String dir = od.getDirectory();
 		String name = od.getFileName();
 		return (dir + name);
@@ -286,11 +337,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			this.loadingDialog.dispose();
 			if(this.previewDialog != null)
 				this.previewDialog.dispose();
+			if(this.mergeDialog != null)
+				this.mergeDialog.dispose();
 			this.manager.dispose();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		IJ.freeMemory();
 	}
+
 }
 

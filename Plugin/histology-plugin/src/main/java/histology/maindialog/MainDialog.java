@@ -249,7 +249,6 @@ public class MainDialog extends ImageWindow {
             }
         });
 
-
         menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("File");
