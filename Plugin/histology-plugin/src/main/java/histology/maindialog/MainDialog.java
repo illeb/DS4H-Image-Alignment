@@ -89,8 +89,13 @@ public class MainDialog extends ImageWindow {
         trainingJPanel.setLayout(trainingLayout);
 
         lst_rois = new JList<>();
-        trainingJPanel.add(lst_rois, trainingConstraints);
-        lst_rois.setPreferredSize(new Dimension(200, 200));
+
+        JScrollPane scrollPane = new JScrollPane(lst_rois);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setPreferredSize(new Dimension(180, 180));
+        scrollPane.setMinimumSize(new Dimension(180, 180));
+        scrollPane.setMaximumSize(new Dimension(180, 180));
+        trainingJPanel.add(scrollPane, trainingConstraints);
         lst_rois.setBackground(Color.white);
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         trainingJPanel.setLayout(trainingLayout);

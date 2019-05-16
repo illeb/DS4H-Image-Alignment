@@ -139,7 +139,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         this.imageBuffer.close();
     }
 
-    public static class BufferedImage extends ImagePlus {
+    public class BufferedImage extends ImagePlus {
         private RoiManager  manager;
         private Roi[] roisBackup;
         public BufferedImage(String text, Image image, RoiManager manager) {

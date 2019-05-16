@@ -99,7 +99,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 				try {
 					this.loadingDialog.showDialog();
-					previewDialog = new PreviewDialog(manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
+					previewDialog = new PreviewDialog(manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages(), "Preview Image " + (manager.getCurrentIndex()+1) + "/" + manager.getNImages());
 				} catch (Exception e) { }
 				this.loadingDialog.hideDialog();
 				previewDialog.pack();
@@ -234,12 +234,12 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof histology.previewdialog.event.ChangeImageEvent) {
+			histology.previewdialog.event.ChangeImageEvent event = (histology.previewdialog.event.ChangeImageEvent)dialogEvent;
 			new Thread(() -> {
 				WindowManager.setCurrentWindow(image.getWindow());
-				histology.previewdialog.event.ChangeImageEvent event = (histology.previewdialog.event.ChangeImageEvent)dialogEvent;
 				BufferedImagesManager.BufferedImage image = manager.get(event.getIndex());
-				previewDialog.changeImage(image);
 				IJ.freeMemory();
+				previewDialog.changeImage(image, "Preview Image " + (event.getIndex()+1) + "/" + manager.getNImages());
 				this.loadingDialog.hideDialog();
 			}).start();
 			this.loadingDialog.showDialog();

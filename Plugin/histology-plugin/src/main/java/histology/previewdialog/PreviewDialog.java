@@ -19,10 +19,10 @@ public class PreviewDialog extends ImageWindow {
     private OnPreviewDialogEventListener listener;
     private Panel all = new Panel();
     BufferedImagesManager.BufferedImage currentImage;
-    public PreviewDialog(BufferedImagesManager.BufferedImage startingImage, OnPreviewDialogEventListener listener, int scrollbarStartingValue, int scrollbarMaximum) {
+    public PreviewDialog(BufferedImagesManager.BufferedImage startingImage, OnPreviewDialogEventListener listener, int scrollbarStartingValue, int scrollbarMaximum, String title) {
         super(startingImage, new CustomCanvas(startingImage));
         this.currentImage = startingImage;
-        setTitle("Preview window");
+        setTitle(title);
         final CustomCanvas canvas = (CustomCanvas) getCanvas();
 
         GridBagLayout layout = new GridBagLayout();
@@ -44,7 +44,7 @@ public class PreviewDialog extends ImageWindow {
         all.add(canvas, allConstraints);
 
         JScrollBar scrollbar = new JScrollBar(Adjustable.HORIZONTAL, scrollbarStartingValue, 1, 0, scrollbarMaximum);
-
+        scrollbar.setBlockIncrement(1);
         allConstraints.gridy++;
         all.add(scrollbar, allConstraints);
 
@@ -78,11 +78,15 @@ public class PreviewDialog extends ImageWindow {
                 listener.onPreviewDialogEvent(new CloseDialogEvent());
             }
         });
-        scrollbar.addAdjustmentListener(e -> this.listener.onPreviewDialogEvent(new ChangeImageEvent(scrollbar.getValue())));
+        scrollbar.addAdjustmentListener(e -> {
+            scrollbar.updateUI();
+            this.listener.onPreviewDialogEvent(new ChangeImageEvent(scrollbar.getValue()));
+        });
+        this.setResizable(false);
         this.listener = listener;
     }
 
-    public void changeImage(BufferedImagesManager.BufferedImage image) {
+    public void changeImage(BufferedImagesManager.BufferedImage image, String title) {
         this.setImage(image);
         this.currentImage = image;
         drawRois();
@@ -90,6 +94,7 @@ public class PreviewDialog extends ImageWindow {
         // The zoom scaling command works on the current active window: to be 100% sure it will work, we need to forcefully select the preview window.
         IJ.selectWindow(this.getImagePlus().getID());
         new Zoom().run("scale");
+        this.setTitle(title);
         this.pack();
     }
 
