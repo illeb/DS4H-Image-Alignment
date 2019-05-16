@@ -104,7 +104,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 				try {
 					this.loadingDialog.showDialog();
-					previewDialog = new PreviewDialog( manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
+					previewDialog = new PreviewDialog(manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
 				} catch (Exception e) { }
 				this.loadingDialog.hideDialog();
 			}).start();
@@ -266,7 +266,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof histology.mergedialog.event.ExitEvent) {
-			if(mergedImageSaved == false) {
+			if(!mergedImageSaved) {
 				String[] buttons = { "Yes", "No"};
 				int answer = JOptionPane.showOptionDialog(null, MERGED_IMAGE_NOT_SAVED_MESSAGE, "Careful now",
 						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);

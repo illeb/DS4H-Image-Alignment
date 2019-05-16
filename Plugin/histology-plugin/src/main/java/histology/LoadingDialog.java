@@ -13,7 +13,7 @@ public class LoadingDialog extends JDialog {
 
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setUndecorated(true);
-        this.setModalityType(ModalityType.MODELESS);
+        this.setModalityType(ModalityType.APPLICATION_MODAL);
         this.setSize(400, 200);
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);

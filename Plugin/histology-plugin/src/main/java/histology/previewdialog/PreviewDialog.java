@@ -5,10 +5,12 @@ import histology.maindialog.CustomCanvas;
 import histology.maindialog.OnMainDialogEventListener;
 import histology.previewdialog.event.ChangeImageEvent;
 import histology.previewdialog.event.CloseDialogEvent;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
 import ij.gui.Roi;
+import ij.plugin.Zoom;
 
 import javax.swing.*;
 import java.awt.*;
@@ -89,6 +91,11 @@ public class PreviewDialog extends ImageWindow {
         this.setImage(image);
         this.currentImage = image;
         updateRoisOnScreen();
+
+        // The zoom scaling command works on the current active window: to be 100% sure it will work, we need to forcefully select the preview window.
+        IJ.selectWindow(this.getImagePlus().getID());
+        new Zoom().run("scale");
+        this.pack();
     }
 
     public void updateRoisOnScreen() {
