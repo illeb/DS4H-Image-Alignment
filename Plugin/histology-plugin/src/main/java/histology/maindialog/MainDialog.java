@@ -279,7 +279,7 @@ public class MainDialog extends ImageWindow {
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
-        this.updateRoiList(image.getManager());
+        this.drawRois(image.getManager());
 
         // Let's call the zoom plugin to scale the image to fit in the user window
         // The zoom scaling command works on the current active window: to be 100% sure it will work, we need to forcefully select the preview window.
@@ -292,10 +292,9 @@ public class MainDialog extends ImageWindow {
      * Update the Roi List based on the given RoiManager istance
      * @param manager
      */
-    public void updateRoiList(RoiManager manager) {
-        this.refreshROIList(manager);
-        manager.runCommand("Show All");
+    public void drawRois(RoiManager manager) {
         manager.runCommand("show all with labels");
+        this.refreshROIList(manager);
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
     }

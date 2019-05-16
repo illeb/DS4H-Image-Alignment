@@ -2,11 +2,9 @@ package histology.previewdialog;
 
 import histology.BufferedImagesManager;
 import histology.maindialog.CustomCanvas;
-import histology.maindialog.OnMainDialogEventListener;
 import histology.previewdialog.event.ChangeImageEvent;
 import histology.previewdialog.event.CloseDialogEvent;
 import ij.IJ;
-import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
 import ij.gui.Roi;
@@ -82,15 +80,12 @@ public class PreviewDialog extends ImageWindow {
         });
         scrollbar.addAdjustmentListener(e -> this.listener.onPreviewDialogEvent(new ChangeImageEvent(scrollbar.getValue())));
         this.listener = listener;
-        pack();
-
-        updateRoisOnScreen();
     }
 
     public void changeImage(BufferedImagesManager.BufferedImage image) {
         this.setImage(image);
         this.currentImage = image;
-        updateRoisOnScreen();
+        drawRois();
 
         // The zoom scaling command works on the current active window: to be 100% sure it will work, we need to forcefully select the preview window.
         IJ.selectWindow(this.getImagePlus().getID());
@@ -98,11 +93,11 @@ public class PreviewDialog extends ImageWindow {
         this.pack();
     }
 
-    public void updateRoisOnScreen() {
+    public void drawRois() {
         Overlay overlay = new Overlay();
 		for (int i = overlay.size(); i > 0; i--)
 			overlay.remove(i);
-		for(Roi roi : this.currentImage.getManager().getSelectedRoisAsArray()) {
+		for(Roi roi : this.currentImage.getManager().getRoisAsArray()) {
 			Roi newROi = new Roi(roi.getXBase(), roi.getYBase(), roi.getFloatWidth(), roi.getFloatHeight());
 			newROi.setStrokeColor(roi.getStrokeColor());
 			overlay.add(roi);

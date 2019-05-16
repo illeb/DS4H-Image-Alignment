@@ -58,7 +58,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String MERGED_IMAGE_NOT_SAVED_MESSAGE  = "Merged image not saved: are you sure you want to exit without saving?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
-	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \\\"Maximum Memory\\\" to, at most, 1000 MB less than your computer's total RAM).\\n\", \"Error: insufficient memory\"";
+	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -102,6 +102,9 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 					previewDialog = new PreviewDialog(manager.get(manager.getCurrentIndex()), this, manager.getCurrentIndex(), manager.getNImages());
 				} catch (Exception e) { }
 				this.loadingDialog.hideDialog();
+				previewDialog.pack();
+				previewDialog.setVisible(true);
+				previewDialog.drawRois();
 			}).start();
 		}
 
@@ -125,9 +128,9 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		    DeleteRoiEvent event = (DeleteRoiEvent)dialogEvent;
 		    image.getManager().select(event.getRoiIndex());
 		    image.getManager().runCommand("Delete");
-		    mainDialog.updateRoiList(image.getManager());
+		    mainDialog.drawRois(image.getManager());
 			if(previewDialog != null && previewDialog.isVisible())
-				previewDialog.updateRoisOnScreen();
+				previewDialog.drawRois();
 
 			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
@@ -150,13 +153,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			roi.setStrokeWidth(strokeWidth);
 
 			roi.setImage(image);
-			image.getManager().add(image, roi, 0);
+			image.getManager().add(image, roi, image.getManager().getRoisAsArray().length + 1);
 
-			mainDialog.updateRoiList(image.getManager());
-
-			image.getManager().runCommand("show all with labels");
+			mainDialog.drawRois(image.getManager());
 			if(previewDialog != null && previewDialog.isVisible())
-				previewDialog.updateRoisOnScreen();
+				previewDialog.drawRois();
 
 			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
@@ -171,13 +172,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			image.getRoi().setStrokeColor(Color.yellow);
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
-				previewDialog.updateRoisOnScreen();
+				previewDialog.drawRois();
 		}
 
 		if(dialogEvent instanceof DeselectedRoiEvent) {
 			DeselectedRoiEvent event = (DeselectedRoiEvent)dialogEvent;
 			Arrays.stream(image.getManager().getSelectedRoisAsArray()).forEach(roi -> roi.setStrokeColor(Color.BLUE));
 			image.getManager().select(event.getRoiIndex());
+			previewDialog.drawRois();
 		}
 
 		if(dialogEvent instanceof MergeEvent) {
@@ -225,7 +227,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		if(dialogEvent instanceof MovedRoiEvent) {
 			this.mainDialog.refreshROIList(image.getManager());
 			if(previewDialog != null)
-				this.previewDialog.updateRoisOnScreen();
+				this.previewDialog.drawRois();
 		}
 	}
 
