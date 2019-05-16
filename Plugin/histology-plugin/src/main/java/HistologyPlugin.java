@@ -21,7 +21,6 @@ import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
-import loci.plugins.out.Exporter;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -32,11 +31,7 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -225,6 +220,12 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		if(dialogEvent instanceof OpenAboutEvent) {
 			this.aboutDialog.setVisible(true);
+		}
+
+		if(dialogEvent instanceof MovedRoiEvent) {
+			this.mainDialog.refreshROIList(image.getManager());
+			if(previewDialog != null)
+				this.previewDialog.updateRoisOnScreen();
 		}
 	}
 

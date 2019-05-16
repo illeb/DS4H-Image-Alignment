@@ -3,13 +3,10 @@ package histology.maindialog;
 import histology.BufferedImagesManager;
 import histology.maindialog.event.*;
 import ij.IJ;
-import ij.ImagePlus;
 import ij.gui.ImageWindow;
-import ij.gui.OvalRoi;
 import ij.gui.Roi;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
-import org.w3c.dom.css.Rect;
 
 import javax.swing.*;
 import java.awt.*;
@@ -193,14 +190,12 @@ public class MainDialog extends ImageWindow {
             @Override
             public void mouseDragged(MouseEvent e) {
                 super.mouseDragged(e);
-                checkRoi();
-            }
 
-            private void checkRoi() {
+                // Check if the Rois in the image have changed position by user input; if so, update the list and notify the controller
                 Rectangle bounds = getImagePlus().getRoi().getBounds();
                 if (!bounds.equals(oldRect)) {
-                    refreshList(image.getManager());
                     oldRect = (Rectangle)bounds.clone();
+                    eventListener.onMainDialogEvent(new MovedRoiEvent());
                 }
             }
         });
@@ -298,19 +293,18 @@ public class MainDialog extends ImageWindow {
      * @param manager
      */
     public void updateRoiList(RoiManager manager) {
-        this.refreshList(manager);
+        this.refreshROIList(manager);
         manager.runCommand("Show All");
         manager.runCommand("show all with labels");
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
     }
 
-    private void refreshList(RoiManager manager) {
+    public void refreshROIList(RoiManager manager) {
         lst_rois_model.removeAllElements();
         int idx = 0;
         for (Roi roi : manager.getRoisAsArray())
             lst_rois_model.add(idx++, MessageFormat.format("{0} - {1},{2}", idx, (int)roi.getXBase() + (int)(roi.getFloatWidth() / 2), (int)roi.getYBase() + (int)(roi.getFloatHeight() / 2)));
-
     }
 
     public void setPreviewWindowCheckBox(boolean value) {
