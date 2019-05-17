@@ -223,33 +223,31 @@ public class MainDialog extends ImageWindow {
         lst_rois_model = new DefaultListModel<>();
         lst_rois.setModel(lst_rois_model);
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
-            boolean gestureStarted = false;
+            // Thanks to https://stackoverflow.com/a/31336378/1306679
             @Override
-            public void setSelectionInterval(int index0, int index1) {
-                if(!gestureStarted) {
-                    if (isSelectedIndex(index0)) {
-                        super.removeSelectionInterval(index0, index0);
-                        eventListener.onMainDialogEvent(new DeselectedRoiEvent(index0));
+            public void setSelectionInterval(int startIndex, int endIndex) {
+                if (startIndex == endIndex) {
+                    if (multipleItemsCurrentlyAreSelected()) {
+                        clearSelection();
+                    }
+                    if (isSelectedIndex(startIndex)) {
+                        clearSelection();
+                        eventListener.onMainDialogEvent(new DeselectedRoiEvent(startIndex));
                         btn_deleteRoi.setEnabled(false);
-                        return;
                     }
-                    else{
-                        eventListener.onMainDialogEvent(new SelectedRoiEvent(index0));
+                    else {
+                        eventListener.onMainDialogEvent(new SelectedRoiEvent(startIndex));
                         btn_deleteRoi.setEnabled(true);
-                        super.setSelectionInterval(index0, index1);
+                        super.setSelectionInterval(startIndex, endIndex);
                     }
                 }
-                gestureStarted = true;
             }
 
-            @Override
-            public void setValueIsAdjusting(boolean isAdjusting) {
-                if (isAdjusting == false) {
-                    gestureStarted = false;
-                }
+            private boolean multipleItemsCurrentlyAreSelected() {
+                return getMinSelectionIndex() != getMaxSelectionIndex();
             }
+
         });
-
         menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("File");
