@@ -11,6 +11,7 @@ import loci.formats.gui.BufferedImageReader;
 import loci.formats.services.OMEXMLService;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -20,16 +21,20 @@ import java.util.ListIterator;
 
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
-    private BufferedImageReader imageBuffer;
+    private List<BufferedImageReader> imageBuffers;
     private List<RoiManager> roiManagers;
     private int imageIndex;
     private boolean reducedImageMode;
     public String pathFile;
-    public BufferedImagesManager(String pathFile) throws IOException, FormatException, ImageOversizeException {
-        this.pathFile = pathFile;
+    public BufferedImagesManager(String pathFile) throws ImageOversizeException, FormatException, IOException {
+        imageBuffers = new ArrayList<>();
         this.imageIndex = -1;
-        final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
+        this.roiManagers = new ArrayList<>();
+        addFile(pathFile);
+    }
 
+    public void addFile(String pathFile) throws IOException, FormatException, ImageOversizeException {
+        final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         try {
             ServiceFactory factory = new ServiceFactory();
             OMEXMLService service = factory.getInstance(OMEXMLService.class);
@@ -58,16 +63,26 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
                 throw new ImageOversizeException();
         }
 
-        imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
-        this.roiManagers = new ArrayList<>(imageBuffer.getImageCount());
+        BufferedImageReader imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
         for(int i=0; i < imageBuffer.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
+        imageBuffers.add(imageBuffer);
     }
-
     private BufferedImage getImage(int index) {
+        int progressive = 0;
+        BufferedImageReader imageBuffer = null;
+        for (int i = 0; i < imageBuffers.size(); i++) {
+
+            if(progressive + imageBuffers.get(i).getImageCount() > index) {
+                imageBuffer = imageBuffers.get(i);
+                break;
+            }
+            progressive+=imageBuffers.get(i).getImageCount();
+        }
+
         BufferedImage image = null;
         try {
-            image = new BufferedImage(MessageFormat.format("Editor Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index), roiManagers.get(index));
+            image = new BufferedImage(MessageFormat.format("Editor Image {0}/{1}", index + 1, imageBuffer.getImageCount()), imageBuffer.openImage(index- progressive), roiManagers.get(index) );
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,7 +91,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     @Override
     public boolean hasNext() {
-        return imageIndex < imageBuffer.getImageCount() - 1;
+        return imageIndex < this.getNImages() - 1;
     }
 
     @Override
@@ -124,7 +139,12 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     public int getNImages() {
-        return imageBuffer.getImageCount();
+        int progressive = 0;
+        BufferedImageReader imageBuffer = null;
+        for (int i = 0; i < imageBuffers.size(); i++) {
+            progressive += imageBuffers.get(i).getImageCount();
+        }
+        return progressive;
     }
 
     /**
@@ -136,7 +156,13 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     public void dispose() throws IOException {
         this.getRoiManagers().forEach(Window::dispose);
-        this.imageBuffer.close();
+        this.imageBuffers.forEach(buffer -> {
+            try {
+                buffer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public class BufferedImage extends ImagePlus {

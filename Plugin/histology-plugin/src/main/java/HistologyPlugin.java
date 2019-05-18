@@ -21,6 +21,8 @@ import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
+import loci.formats.FormatException;
+import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -59,6 +61,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	static private String MERGED_IMAGE_NOT_SAVED_MESSAGE  = "Merged image not saved: are you sure you want to exit without saving?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
+	static private String UNKNOWN_FORMAT_MESSAGE = "Error: trying to open a file with a unsupported format.";
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -229,6 +232,21 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			if(previewDialog != null)
 				this.previewDialog.drawRois();
 		}
+
+		if(dialogEvent instanceof AddFileEvent) {
+			try {
+				manager.addFile(((AddFileEvent) dialogEvent).getFilePath());
+			}
+			catch(UnknownFormatException e){
+				loadingDialog.hideDialog();
+				JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
+			mainDialog.setNextImageButtonEnabled(manager.hasNext());
+		}
 	}
 
 	@Override
@@ -288,6 +306,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 			if(e instanceof  OutOfMemoryError){
+				this.loadingDialog.hideDialog();
 				JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
 				System.exit(0);
 			}
@@ -317,6 +336,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
+		}
+		catch(UnknownFormatException e){
+			loadingDialog.hideDialog();
+			JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+			this.run();
 		}
 		catch (Exception e) {
 			e.printStackTrace();

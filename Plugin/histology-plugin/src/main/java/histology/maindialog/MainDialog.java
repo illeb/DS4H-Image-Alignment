@@ -5,13 +5,16 @@ import histology.maindialog.event.*;
 import ij.IJ;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.io.OpenDialog;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.text.MessageFormat;
+import java.util.Arrays;
 
 public class MainDialog extends ImageWindow {
     private final OnMainDialogEventListener eventListener;
@@ -253,6 +256,17 @@ public class MainDialog extends ImageWindow {
         Menu fileMenu = new Menu("File");
         MenuItem menuItem = new MenuItem("Open file...");
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new OpenFileEvent()));
+        fileMenu.add(menuItem);
+
+        menuItem = new MenuItem("Add image to current stack");
+        menuItem.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setMultiSelectionEnabled(true);
+            chooser.showOpenDialog(null);
+
+            File[] files = chooser.getSelectedFiles();
+            Arrays.stream(files).forEach(file -> eventListener.onMainDialogEvent(new AddFileEvent(file.getPath())));
+        });
         fileMenu.add(menuItem);
         fileMenu.addSeparator();
         menuItem = new MenuItem("Exit");
