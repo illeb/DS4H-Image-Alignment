@@ -1,14 +1,28 @@
 package histology;
 
 import ij.ImagePlus;
+import ij.Macro;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceException;
 import loci.common.services.ServiceFactory;
+import loci.formats.FilePattern;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
+import loci.formats.in.MetadataLevel;
 import loci.formats.services.OMEXMLService;
+import loci.plugins.BF;
+import loci.plugins.in.DisplayHandler;
+import loci.plugins.in.ImagePlusReader;
+import loci.plugins.in.ImportProcess;
+import loci.plugins.in.ImporterOptions;
+import loci.plugins.util.LociPrefs;
+import ome.xml.meta.IMetadata;
+import ome.xml.meta.MetadataStore;
+import ome.xml.meta.OMEXMLMetadata;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -25,7 +39,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     private List<RoiManager> roiManagers;
     private int imageIndex;
     private boolean reducedImageMode;
-    public String pathFile;
     public BufferedImagesManager(String pathFile) throws ImageOversizeException, FormatException, IOException {
         imageBuffers = new ArrayList<>();
         this.imageIndex = -1;
@@ -34,6 +47,27 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     public void addFile(String pathFile) throws IOException, FormatException, ImageOversizeException {
+        ImportProcess process = null;
+        try {
+            process = test(pathFile);
+        } catch (DependencyException e) {
+            e.printStackTrace();
+        } catch (ServiceException e) {
+            e.printStackTrace();
+        }
+
+        DisplayHandler displayHandler = new DisplayHandler(process);
+        displayHandler.displayOriginalMetadata();
+        displayHandler.displayOMEXML();
+
+        BF.debug("read pixel data");
+        process.execute();
+        ImagePlusReader reader = new ImagePlusReader(process);
+        ImagePlus[] imps = readPixels(reader, process.getOptions(), displayHandler);
+
+        BF.debug("display pixels");
+        displayHandler.displayImages(imps);
+        /*
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         try {
             ServiceFactory factory = new ServiceFactory();
@@ -63,10 +97,53 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
                 throw new ImageOversizeException();
         }
 
+
         BufferedImageReader imageBuffer = BufferedImageReader.makeBufferedImageReader(imageReader);
         for(int i=0; i < imageBuffer.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
+        imageBuffers.add(imageBuffer);*/
+    }
+
+    public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
+                                  DisplayHandler displayHandler) throws FormatException, IOException
+    {
+        if (options.isViewNone()) return null;
+        if (!options.isQuiet()) reader.addStatusListener(displayHandler);
+        ImagePlus[] imps = reader.openImagePlus();
+        return imps;
+    }
+
+    private ImportProcess test(String pathFile) throws IOException, FormatException, DependencyException, ServiceException {
+
+        ImporterOptions options = new ImporterOptions();
+            options.loadOptions();
+            options.setId(pathFile);
+        ImportProcess process = new ImportProcess(options);
+
+        ImageReader imageReader = LociPrefs.makeImageReader();
+        IFormatReader baseReader = imageReader.getReader(pathFile);
+
+
+        ServiceFactory factory = new ServiceFactory();
+        OMEXMLService service = factory.getInstance(OMEXMLService.class);
+        loci.formats.meta.MetadataStore meta = service.createOMEXMLMetadata();
+
+        baseReader.setMetadataStore(meta);
+
+
+
+        baseReader.setMetadataFiltered(true);
+        baseReader.setGroupFiles(false);
+        baseReader.getMetadataOptions().setMetadataLevel(
+                MetadataLevel.ALL);
+        baseReader.setId(pathFile);
+
+        BufferedImageReader imageBuffer = BufferedImageReader.makeBufferedImageReader(baseReader);
+        for(int i=0; i < imageBuffer.getImageCount(); i++)
+            this.roiManagers.add(new RoiManager(false));
         imageBuffers.add(imageBuffer);
+
+        return process;
     }
     private BufferedImage getImage(int index) {
         int progressive = 0;

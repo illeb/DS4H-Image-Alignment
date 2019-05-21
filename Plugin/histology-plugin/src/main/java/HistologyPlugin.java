@@ -319,7 +319,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
-			image = manager.next();
+			/*image = manager.next();
 			mainDialog = new MainDialog(image, this);
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
@@ -332,7 +332,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			if(manager.isReducedImageMode())
 				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
-				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);*/
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
