@@ -313,7 +313,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		});
 		this.aboutDialog = new AboutDialog();
 		this.loadingDialog = new LoadingDialog();
-		this.loadingDialog.showDialog();
+	//	this.loadingDialog.showDialog();
 		mergedImageSaved = false;
 		mergedImagePath = "";
 
