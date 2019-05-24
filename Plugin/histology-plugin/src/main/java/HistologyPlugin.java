@@ -1,7 +1,4 @@
-import histology.AboutDialog;
-import histology.BufferedImagesManager;
-import histology.LeastSquareImageTransformation;
-import histology.LoadingDialog;
+import histology.*;
 import histology.maindialog.MainDialog;
 import histology.mergedialog.MergeDialog;
 import histology.mergedialog.OnMergeDialogEventListener;
@@ -45,7 +42,7 @@ import java.util.stream.Collectors;
 		menuPath = "Plugins>HistologyPlugin")
 public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnMergeDialogEventListener {
 	private BufferedImagesManager manager;
-	private BufferedImagesManager.BufferedImage image = null;
+	private BufferedImage image = null;
 	private MainDialog mainDialog;
 	private PreviewDialog previewDialog;
 	private MergeDialog mergeDialog;
@@ -255,7 +252,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			histology.previewdialog.event.ChangeImageEvent event = (histology.previewdialog.event.ChangeImageEvent)dialogEvent;
 			new Thread(() -> {
 				WindowManager.setCurrentWindow(image.getWindow());
-				BufferedImagesManager.BufferedImage image = manager.get(event.getIndex());
+				BufferedImage image = manager.get(event.getIndex());
 				IJ.freeMemory();
 				previewDialog.changeImage(image, "Preview Image " + (event.getIndex()+1) + "/" + manager.getNImages());
 				this.loadingDialog.hideDialog();
@@ -319,7 +316,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
-			/*image = manager.next();
+			image = manager.next();
 			mainDialog = new MainDialog(image, this);
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
@@ -332,7 +329,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			if(manager.isReducedImageMode())
 				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
-				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);*/
+				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);

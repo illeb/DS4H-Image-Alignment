@@ -1,5 +1,6 @@
 package histology.maindialog;
 
+import histology.BufferedImage;
 import histology.BufferedImagesManager;
 import histology.maindialog.event.*;
 import ij.IJ;
@@ -39,12 +40,12 @@ public class MainDialog extends ImageWindow {
     private JList<String> lst_rois;
     private DefaultListModel<String> lst_rois_model;
 
-    private BufferedImagesManager.BufferedImage image;
+    private BufferedImage image;
 
     private boolean mouseOverCanvas;
 
     private Rectangle oldRect = null;
-    public MainDialog(BufferedImagesManager.BufferedImage plus, OnMainDialogEventListener listener) {
+    public MainDialog(BufferedImage plus, OnMainDialogEventListener listener) {
         super(plus, new CustomCanvas(plus));
         this.image = plus;
 
@@ -288,7 +289,7 @@ public class MainDialog extends ImageWindow {
      * Change the actual image displayed in the main view, based on the given BufferedImage istance
      * @param image
      */
-    public void changeImage(BufferedImagesManager.BufferedImage image) {
+    public void changeImage(BufferedImage image) {
         this.setImage(image);
         image.backupRois();
         image.getManager().reset();
