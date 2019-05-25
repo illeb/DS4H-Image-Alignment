@@ -11,9 +11,11 @@ import java.util.Arrays;
 public class BufferedImage extends ImagePlus {
     private RoiManager manager;
     private Roi[] roisBackup;
-    public BufferedImage(String text, Image image, RoiManager manager) {
+    private boolean isReduced;
+    public BufferedImage(String text, Image image, RoiManager manager, boolean isReduced) {
         super(text, image);
         this.manager = manager;
+        this.isReduced = isReduced;
     }
 
     public RoiManager getManager() {
@@ -26,5 +28,9 @@ public class BufferedImage extends ImagePlus {
 
     public void backupRois() {
         this.roisBackup = this.manager.getRoisAsArray();
+    }
+
+    public boolean isReduced() {
+        return isReduced;
     }
 }

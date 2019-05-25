@@ -29,11 +29,8 @@ import java.util.List;
 import java.util.ListIterator;
 
 public class BufferedImagesManager implements ListIterator<ImagePlus>{
-
-    // private List<BufferedImageReader> imageBuffers;
     private List<ImageFile> imageFiles;
     private int imageIndex;
-    private boolean reducedImageMode;
     public BufferedImagesManager(String pathFile) throws ImageOversizeException, FormatException, IOException {
         this.imageFiles = new  ArrayList<>();
         this.imageIndex = -1;
@@ -118,25 +115,17 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     public int getNImages() {
-        int progressive = 0;
-        BufferedImageReader imageBuffer = null;
-        for (int i = 0; i < imageFiles.size(); i++)
-            progressive += imageFiles.get(i).getNImages();
-        return progressive;
+        return imageFiles.stream().mapToInt(ImageFile::getNImages).sum();
     }
 
     /**
      * This flag indicates whenever the manger uses a reduced-size image for compatibility
       */
-    public boolean isReducedImageMode() {
-        return this.reducedImageMode;
-    }
 
     public void dispose() throws IOException {
         this.imageFiles.forEach(imageFile -> {
             try {
                 imageFile.dispose();
-                imageFile.getBufferedImageReader().close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

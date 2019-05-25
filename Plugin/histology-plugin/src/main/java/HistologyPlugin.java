@@ -326,7 +326,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setVisible(true);
 
 			this.loadingDialog.hideDialog();
-			if(manager.isReducedImageMode())
+			if(image.isReduced())
 				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
 				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);

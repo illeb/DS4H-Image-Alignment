@@ -1,13 +1,23 @@
 package histology;
 
+import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceException;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
+import loci.formats.in.MetadataLevel;
 import loci.formats.services.OMEXMLService;
+import loci.plugins.BF;
+import loci.plugins.in.DisplayHandler;
+import loci.plugins.in.ImagePlusReader;
+import loci.plugins.in.ImportProcess;
+import loci.plugins.in.ImporterOptions;
+import loci.plugins.util.LociPrefs;
 
 import java.awt.*;
 import java.io.IOException;
@@ -65,24 +75,56 @@ public class ImageFile {
     }
 
     public BufferedImage getImage(int index) throws IOException, FormatException {
-        return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index) );
+        return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
     }
 
     public String getPathFile() {
         return pathFile;
     }
 
-    public void setPathFile(String pathFile) {
-        this.pathFile = pathFile;
-    }
-
-    public BufferedImageReader getBufferedImageReader() {
-        return bufferedImageReader;
-    }
-
     public void dispose() throws IOException {
         bufferedImageReader.close();
         roiManagers.forEach(Window::dispose);
+    }
+
+    private void  getWholeSlideImage(String pathFile) throws IOException, FormatException, DependencyException, ServiceException {
+
+        ImporterOptions options = new ImporterOptions();
+        options.loadOptions();
+        options.setVirtual(true);
+        options.setId(pathFile);
+        ImportProcess process = new ImportProcess(options);
+        ImageReader imageReader = LociPrefs.makeImageReader();
+        IFormatReader baseReader = imageReader.getReader(pathFile);
+
+        ServiceFactory factory = new ServiceFactory();
+        OMEXMLService service = factory.getInstance(OMEXMLService.class);
+        loci.formats.meta.MetadataStore meta = service.createOMEXMLMetadata();
+
+        baseReader.setMetadataStore(meta);
+
+        baseReader.setMetadataFiltered(true);
+        baseReader.setGroupFiles(false);
+        baseReader.getMetadataOptions().setMetadataLevel(
+                MetadataLevel.ALL);
+        baseReader.setId(pathFile);
+
+        DisplayHandler displayHandler = new DisplayHandler(process);
+        displayHandler.displayOriginalMetadata();
+        displayHandler.displayOMEXML();
+        BF.debug("read pixel data");
+        process.execute();
+        ImagePlusReader reader = new ImagePlusReader(process);
+        ImagePlus[] imps = readPixels(reader, process.getOptions(), displayHandler);
+    }
+
+    public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
+            DisplayHandler displayHandler) throws FormatException, IOException
+    {
+        if (options.isViewNone()) return null;
+        if (!options.isQuiet()) reader.addStatusListener(displayHandler);
+        ImagePlus[] imps = reader.openImagePlus();
+        return imps;
     }
 
     public List<RoiManager> getRoiManagers() {
