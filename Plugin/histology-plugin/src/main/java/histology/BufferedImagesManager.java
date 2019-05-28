@@ -43,7 +43,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         this.imageFiles.add(imageFile);
     }
 
-    private BufferedImage getImage(int index) {
+    private BufferedImage getImage(int index, boolean wholeSlide) {
         int progressive = 0;
         ImageFile imageFile = null;
         for (int i = 0; i < imageFiles.size(); i++) {
@@ -57,7 +57,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
         BufferedImage image = null;
         try {
-            image = imageFile.getImage(index - progressive);
+            image = imageFile.getImage(index - progressive,  wholeSlide);
             image.setTitle(MessageFormat.format("Editor Image {0}/{1}", index + 1, this.getNImages()));
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,7 +75,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         if(!hasNext())
             return null;
         imageIndex++;
-        return getImage(imageIndex);
+        return getImage(imageIndex, false);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         if(!hasPrevious())
             return null;
         imageIndex--;
-        return getImage(imageIndex);
+        return getImage(imageIndex, false);
     }
 
     @Override
@@ -120,9 +120,8 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     /**
      * This flag indicates whenever the manger uses a reduced-size image for compatibility
-      */
-
-    public void dispose() throws IOException {
+     */
+    public void dispose() {
         this.imageFiles.forEach(imageFile -> {
             try {
                 imageFile.dispose();
@@ -133,7 +132,11 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     }
 
     public BufferedImage get(int index) {
-        return this.getImage(index);
+        return this.getImage(index, false);
+    }
+
+    public BufferedImage get(int index, boolean wholeSlide) {
+        return this.getImage(index, wholeSlide);
     }
 
     public List<RoiManager> getRoiManagers() {

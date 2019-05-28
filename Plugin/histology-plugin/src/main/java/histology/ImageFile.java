@@ -1,7 +1,6 @@
 package histology;
 
 import ij.ImagePlus;
-import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
@@ -12,7 +11,6 @@ import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
 import loci.formats.in.MetadataLevel;
 import loci.formats.services.OMEXMLService;
-import loci.plugins.BF;
 import loci.plugins.in.DisplayHandler;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
@@ -74,8 +72,23 @@ public class ImageFile {
         return this.bufferedImageReader.getImageCount();
     }
 
-    public BufferedImage getImage(int index) throws IOException, FormatException {
-        return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
+    public BufferedImage getImage(int index, boolean wholeSlide) throws IOException, FormatException {
+        wholeSlide = true;
+        if(!wholeSlide)
+            return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
+        else{
+            if(virtualStasck == null) {
+                try {
+                    getWholeSlideImage();
+                } catch (DependencyException e) {
+                    e.printStackTrace();
+                } catch (ServiceException e) {
+                    e.printStackTrace();
+                }
+            }
+            virtualStasck.setZ(index + 1);
+            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index), false);
+        }
     }
 
     public String getPathFile() {
@@ -87,12 +100,15 @@ public class ImageFile {
         roiManagers.forEach(Window::dispose);
     }
 
-    private void  getWholeSlideImage(String pathFile) throws IOException, FormatException, DependencyException, ServiceException {
+    ImagePlus virtualStasck = null;
+    private void getWholeSlideImage() throws IOException, FormatException, DependencyException, ServiceException {
 
         ImporterOptions options = new ImporterOptions();
         options.loadOptions();
         options.setVirtual(true);
         options.setId(pathFile);
+        options.setSplitChannels(false);
+        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
         ImportProcess process = new ImportProcess(options);
         ImageReader imageReader = LociPrefs.makeImageReader();
         IFormatReader baseReader = imageReader.getReader(pathFile);
@@ -112,10 +128,11 @@ public class ImageFile {
         DisplayHandler displayHandler = new DisplayHandler(process);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
-        BF.debug("read pixel data");
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
-        ImagePlus[] imps = readPixels(reader, process.getOptions(), displayHandler);
+        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0];
+        /*return virtualStasck;
+        return new BufferedImage("", imps[0].getImage(), roiManagers.get(0), false);*/
     }
 
     public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,

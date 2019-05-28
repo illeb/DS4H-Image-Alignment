@@ -18,6 +18,9 @@ import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
+import ij.process.ImageProcessor;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceException;
 import loci.formats.FormatException;
 import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
@@ -35,6 +38,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /** Loads and displays a dataset using the ImageJ API. */
@@ -193,6 +197,38 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mergeDialog = new MergeDialog(stack, this);
 			mergeDialog.pack();
 			mergeDialog.setVisible(true);
+
+			try {
+				//ImagePlus result = LeastSquareImageTransformation.transform(manager.,manager.getImageFile(1).getWholeSlideImage());
+		/*		ArrayList<ImagePlus> images = new ArrayList<>();
+				BufferedImage baseImage = manager.get(0, true);
+				images.add(baseImage);
+				for(int i=1; i < manager.getNImages(); i++)
+					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), baseImage));
+
+				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+				mergedImagePath = IJ.getDir("temp") + stack.hashCode();
+				new FileSaver(stack).saveAsTiff(mergedImagePath);
+				mergeDialog = new MergeDialog(stack, this);
+				mergeDialog.pack();
+				mergeDialog.setVisible(true);*/
+					// stack.addSlice(LeastSquareImageTransformation.transform(manager.get(i, true),manager.get(0, true)).getProcessor());
+					// new FileSaver(LeastSquareImageTransformation.transform(manager.get(i, true),manager.get(0, true))).saveAsTiff(IJ.getDir("temp") + stack.hashCode() + i);
+/*				int size = stack.getSize();
+				Properties s = stack.getProperties();
+
+				mergedImagePath = IJ.getDir("temp") + stack.hashCode();
+
+				int n = stack.getSize();
+				for (int i=1; i<=n; i++) {
+					ImageProcessor ip = stack.getProcessor(i);
+					ImagePlus imp = new ImagePlus(i+"/"+stack.getSize(), ip);
+					new FileSaver(imp).saveAsTiff(mergedImagePath + i + "");
+					imp.close();
+				}*/
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		if(dialogEvent instanceof OpenFileEvent || dialogEvent instanceof ExitEvent) {
@@ -355,18 +391,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 * Dispose all the opened workload objects.
 	 */
 	private void disposeAll() {
-		try {
-			this.mainDialog.dispose();
-			this.loadingDialog.hideDialog();
-			this.loadingDialog.dispose();
-			if(this.previewDialog != null)
-				this.previewDialog.dispose();
-			if(this.mergeDialog != null)
-				this.mergeDialog.dispose();
-			this.manager.dispose();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.mainDialog.dispose();
+		this.loadingDialog.hideDialog();
+		this.loadingDialog.dispose();
+		if(this.previewDialog != null)
+			this.previewDialog.dispose();
+		if(this.mergeDialog != null)
+			this.mergeDialog.dispose();
+		this.manager.dispose();
 		IJ.freeMemory();
 	}
 
