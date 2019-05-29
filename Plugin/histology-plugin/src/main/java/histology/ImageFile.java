@@ -44,23 +44,23 @@ public class ImageFile {
             throw new FormatException("Could not create OME-XML store.", exc);
         }
         imageReader.setId(pathFile);
-        boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE;
+        boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
-            if(imageReader.getSeriesCount() <= 1)
+            /*if(imageReader.getSeriesCount() <= 1)
                 throw new BufferedImagesManager.ImageOversizeException();
-
+*/
             // Cycles all the avaiable series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
                 imageReader.setSeries(i);
-                over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE;
+                over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
 
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
             }
 
             // after all cycles, if we did not found an alternative series of sustainable size, throw an error
-            if(!this.reducedImageMode)
-                throw new BufferedImagesManager.ImageOversizeException();
+            /*if(!this.reducedImageMode)
+                throw new BufferedImagesManager.ImageOversizeException();*/
         }
 
         this.bufferedImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
@@ -73,7 +73,6 @@ public class ImageFile {
     }
 
     public BufferedImage getImage(int index, boolean wholeSlide) throws IOException, FormatException {
-        wholeSlide = true;
         if(!wholeSlide)
             return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
@@ -108,6 +107,7 @@ public class ImageFile {
         options.setVirtual(true);
         options.setId(pathFile);
         options.setSplitChannels(false);
+        options.setSeriesOn(0, true);
         options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
         ImportProcess process = new ImportProcess(options);
         ImageReader imageReader = LociPrefs.makeImageReader();
@@ -130,7 +130,7 @@ public class ImageFile {
         displayHandler.displayOMEXML();
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0];
+        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0].flatten();
         /*return virtualStasck;
         return new BufferedImage("", imps[0].getImage(), roiManagers.get(0), false);*/
     }

@@ -188,9 +188,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		if(dialogEvent instanceof MergeEvent) {
 			ArrayList<ImagePlus> images = new ArrayList<>();
-			images.add(manager.get(0));
+			BufferedImage sourceImg = manager.get(0, true);
+			images.add(sourceImg);
 			for(int i=1; i < manager.getNImages(); i++)
-				images.add(LeastSquareImageTransformation.transform(manager.get(i),manager.get(0)));
+				images.add(LeastSquareImageTransformation.transform(manager.get(i, true),sourceImg));
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
 			new FileSaver(stack).saveAsTiff(mergedImagePath);
