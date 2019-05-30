@@ -12,10 +12,18 @@ public class BufferedImage extends ImagePlus {
     private RoiManager manager;
     private Roi[] roisBackup;
     private boolean isReduced;
+    private Dimension reduceImageDimensions;
     public BufferedImage(String text, Image image, RoiManager manager, boolean isReduced) {
         super(text, image);
         this.manager = manager;
         this.isReduced = isReduced;
+    }
+
+    public BufferedImage(String text, Image image, RoiManager manager, Dimension reduceImageDimensions) {
+        super(text, image);
+        this.manager = manager;
+        this.isReduced = true;
+        this.reduceImageDimensions = reduceImageDimensions;
     }
 
     public RoiManager getManager() {
@@ -32,5 +40,9 @@ public class BufferedImage extends ImagePlus {
 
     public boolean isReduced() {
         return isReduced;
+    }
+
+    public Dimension getReduceImageDimensions() {
+        return reduceImageDimensions;
     }
 }

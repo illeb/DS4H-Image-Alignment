@@ -187,6 +187,18 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof MergeEvent) {
+		/*	ArrayList<ImagePlus> images = new ArrayList<>();
+			BufferedImage sourceImg = manager.get(0, true);
+			images.add(sourceImg);
+			for(int i=1; i < manager.getNImages(); i++)
+				images.add(LeastSquareImageTransformation.transform(manager.get(i, true),sourceImg));
+			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
+			new FileSaver(stack).saveAsTiff(mergedImagePath);
+			JOptionPane.showMessageDialog(null, "completed");
+			mergeDialog = new MergeDialog(stack, this);
+			mergeDialog.pack();
+			mergeDialog.setVisible(true);*/
 			ArrayList<ImagePlus> images = new ArrayList<>();
 			BufferedImage sourceImg = manager.get(0, true);
 			images.add(sourceImg);
@@ -195,6 +207,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
 			new FileSaver(stack).saveAsTiff(mergedImagePath);
+			JOptionPane.showMessageDialog(null, "completed");
 			mergeDialog = new MergeDialog(stack, this);
 			mergeDialog.pack();
 			mergeDialog.setVisible(true);
@@ -206,7 +219,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				images.add(baseImage);
 				for(int i=1; i < manager.getNImages(); i++)
 					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), baseImage));
-
+DEBUG
 				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				mergedImagePath = IJ.getDir("temp") + stack.hashCode();
 				new FileSaver(stack).saveAsTiff(mergedImagePath);

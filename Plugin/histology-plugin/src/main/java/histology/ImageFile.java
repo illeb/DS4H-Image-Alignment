@@ -25,6 +25,7 @@ import java.util.List;
 public class ImageFile {
     private String pathFile;
     private BufferedImageReader bufferedImageReader;
+    private Dimension reducedImageDimensions;
     private boolean reducedImageMode;
     private List<RoiManager> roiManagers;
 
@@ -47,8 +48,8 @@ public class ImageFile {
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
             /*if(imageReader.getSeriesCount() <= 1)
-                throw new BufferedImagesManager.ImageOversizeException();
-*/
+                throw new BufferedImagesManager.ImageOversizeException();*/
+
             // Cycles all the avaiable series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
                 imageReader.setSeries(i);
@@ -57,6 +58,7 @@ public class ImageFile {
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
             }
+            this.reducedImageDimensions = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
 
             // after all cycles, if we did not found an alternative series of sustainable size, throw an error
             /*if(!this.reducedImageMode)
@@ -86,7 +88,7 @@ public class ImageFile {
                 }
             }
             virtualStasck.setZ(index + 1);
-            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index), false);
+            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index),  this.reducedImageDimensions);
         }
     }
 
@@ -108,11 +110,9 @@ public class ImageFile {
         options.setId(pathFile);
         options.setSplitChannels(false);
         options.setSeriesOn(0, true);
-        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
         ImportProcess process = new ImportProcess(options);
         ImageReader imageReader = LociPrefs.makeImageReader();
         IFormatReader baseReader = imageReader.getReader(pathFile);
-
         ServiceFactory factory = new ServiceFactory();
         OMEXMLService service = factory.getInstance(OMEXMLService.class);
         loci.formats.meta.MetadataStore meta = service.createOMEXMLMetadata();
@@ -122,15 +122,14 @@ public class ImageFile {
         baseReader.setMetadataFiltered(true);
         baseReader.setGroupFiles(false);
         baseReader.getMetadataOptions().setMetadataLevel(
-                MetadataLevel.ALL);
+                MetadataLevel.MINIMUM);
         baseReader.setId(pathFile);
-
         DisplayHandler displayHandler = new DisplayHandler(process);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0].flatten();
+        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0];
         /*return virtualStasck;
         return new BufferedImage("", imps[0].getImage(), roiManagers.get(0), false);*/
     }
@@ -146,5 +145,13 @@ public class ImageFile {
 
     public List<RoiManager> getRoiManagers() {
         return this.roiManagers;
+    }
+
+    public Dimension getReducedImageDimensions() {
+        return reducedImageDimensions;
+    }
+
+    public void setReducedImageDimensions(Dimension reducedImageDimensions) {
+        this.reducedImageDimensions = reducedImageDimensions;
     }
 }
