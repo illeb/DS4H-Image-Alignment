@@ -34,6 +34,8 @@ import net.imagej.ImageJ;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +55,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
 
-	private String mergedImagePath = "";
+	private List<String> mergedImagePaths = new ArrayList<>();
 	private boolean mergedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
@@ -78,6 +80,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		if (pathFile.equals("nullnull"))
 			return;
 		this.initialize(pathFile);
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			this.mergedImagePaths.forEach(imagePath -> {
+				try {
+					Files.deleteIfExists(Paths.get(imagePath));
+				} catch (IOException e) { }
+			});
+		}));
 	}
 
 	@Override
@@ -193,9 +203,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			for(int i=1; i < manager.getNImages(); i++)
 				images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
-			new FileSaver(stack).saveAsTiff(mergedImagePath);
-			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + mergedImagePath);
+
+			String filePath = IJ.getDir("temp") + stack.hashCode();
+			mergedImagePaths.add(filePath);
+			new FileSaver(stack).saveAsTiff(filePath);
+			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
 			mergeDialog = new MergeDialog(stack, this);
 			mergeDialog.pack();
 			mergeDialog.setVisible(true);
@@ -295,7 +307,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		if(dialogEvent instanceof ReuseImageEvent) {
 			this.disposeAll();
-			this.initialize(mergedImagePath);
+			this.initialize(mergedImagePaths.get(mergedImagePaths.size()-1));
 		}
 
 		if(dialogEvent instanceof histology.mergedialog.event.ExitEvent) {
@@ -327,7 +339,6 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
 		mergedImageSaved = false;
-		mergedImagePath = "";
 
 		try {
 			manager = new BufferedImagesManager(pathFile);
