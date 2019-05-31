@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 public class LeastSquareImageTransformation {
 
+    public static int MINIMUM_ROI_NUMBER = 3;
     /**
      * Performs a least square transformation between two BufferedImages with a series of fixed parameters.
      */

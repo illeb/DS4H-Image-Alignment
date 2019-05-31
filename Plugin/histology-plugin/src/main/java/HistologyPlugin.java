@@ -148,7 +148,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && roisNumber.stream().distinct().count() == 1);
+			// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
+			mainDialog.setMergeButtonEnabled(roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
         }
 
 		if(dialogEvent instanceof AddRoiEvent) {
@@ -175,7 +176,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
+			// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
+			mainDialog.setMergeButtonEnabled(roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
 		}
 
 		if(dialogEvent instanceof SelectedRoiEvent) {
