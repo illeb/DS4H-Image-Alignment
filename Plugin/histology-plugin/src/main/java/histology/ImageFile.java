@@ -78,7 +78,7 @@ public class ImageFile {
         if(!wholeSlide)
             return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
-            if(virtualStasck == null) {
+            if(virtualStack == null) {
                 try {
                     getWholeSlideImage();
                 } catch (DependencyException e) {
@@ -87,8 +87,8 @@ public class ImageFile {
                     e.printStackTrace();
                 }
             }
-            virtualStasck.setZ(index + 1);
-            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index),  this.editorImageDimension);
+            virtualStack.setZ(index + 1);
+            return new BufferedImage("", new ImagePlus("", virtualStack.getProcessor()).getImage(), roiManagers.get(index),  this.editorImageDimension);
         }
     }
 
@@ -101,7 +101,7 @@ public class ImageFile {
         roiManagers.forEach(Window::dispose);
     }
 
-    ImagePlus virtualStasck = null;
+    ImagePlus virtualStack = null;
     private void getWholeSlideImage() throws IOException, FormatException, DependencyException, ServiceException {
 
         ImporterOptions options = new ImporterOptions();
@@ -122,20 +122,19 @@ public class ImageFile {
         baseReader.setMetadataFiltered(true);
         baseReader.setGroupFiles(false);
         baseReader.getMetadataOptions().setMetadataLevel(
-                MetadataLevel.MINIMUM);
+                MetadataLevel.ALL);
         baseReader.setId(pathFile);
         DisplayHandler displayHandler = new DisplayHandler(process);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0].flatten();
-        /*return virtualStasck;
-        return new BufferedImage("", imps[0].getImage(), roiManagers.get(0), false);*/
+        virtualStack = readPixels(reader, process.getOptions(), displayHandler)[0];
+        virtualStack.flattenStack();
     }
 
     public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
-            DisplayHandler displayHandler) throws FormatException, IOException
+                                  DisplayHandler displayHandler) throws FormatException, IOException
     {
         if (options.isViewNone()) return null;
         if (!options.isQuiet()) reader.addStatusListener(displayHandler);
