@@ -3,27 +3,11 @@ package histology;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
-import loci.common.services.DependencyException;
-import loci.common.services.ServiceException;
-import loci.common.services.ServiceFactory;
-import loci.formats.FormatException;
-import loci.formats.IFormatReader;
-import loci.formats.ImageReader;
-import loci.formats.in.MetadataLevel;
-import loci.formats.services.OMEXMLService;
-import loci.plugins.BF;
-import loci.plugins.in.DisplayHandler;
-import loci.plugins.in.ImagePlusReader;
-import loci.plugins.in.ImportProcess;
-import loci.plugins.in.ImporterOptions;
-import loci.plugins.util.LociPrefs;
 import mpicbg.ij.Mapping;
 import mpicbg.ij.TransformMeshMapping;
 import mpicbg.models.*;
 import mpicbg.models.Point;
 
-import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,17 +32,13 @@ public class LeastSquareImageTransformation {
         final ImagePlus target = template.createImagePlus();
         final ImageProcessor ipSource = source.getProcessor();
         final ImageProcessor ipTarget = source.getProcessor().createProcessor( template.getWidth(), template.getHeight() );
-   /*     final List<Point> sourcePoints = Arrays.stream(source.getManager().getRoisAsArray())
-                .map(roi -> new Point(new double[]{roi.getXBase(), roi.getYBase()}))
-                .collect(Collectors.toList());
-*/
 
         final List<Point> sourcePoints = Arrays.stream(source.getManager().getRoisAsArray())
                 .map(roi -> {
                     double oldX = roi.getXBase();
                     double oldY = roi.getYBase();
-                    double newX = oldX * (source.getWidth() / source.getReduceImageDimensions().width);
-                    double newY = oldY * (source.getHeight() / source.getReduceImageDimensions().height);
+                    double newX = oldX * (source.getWidth() / source.getEditorImageDimension().width);
+                    double newY = oldY * (source.getHeight() / source.getEditorImageDimension().height);
                     return new Point(new double[]{newX, newY});
                 })
                 .collect(Collectors.toList());
@@ -68,8 +48,8 @@ public class LeastSquareImageTransformation {
                 .map(roi -> {
                     double oldX = roi.getXBase();
                     double oldY = roi.getYBase();
-                    double newX = oldX * (template.getWidth() / template.getReduceImageDimensions().width);
-                    double newY = oldY * (template.getHeight() / template.getReduceImageDimensions().height);
+                    double newX = oldX * (template.getWidth() / template.getEditorImageDimension().width);
+                    double newY = oldY * (template.getHeight() / template.getEditorImageDimension().height);
                     return new Point(new double[]{newX, newY});
                 })
                 .collect(Collectors.toList());
@@ -77,6 +57,7 @@ public class LeastSquareImageTransformation {
         final ArrayList<PointMatch> matches = new ArrayList<>();
         for ( int i = 0; i < numMatches; ++i )
             matches.add( new PointMatch( sourcePoints.get( i ), templatePoints.get( i ) ) );
+
         try
         {
             t.setMatches( matches );

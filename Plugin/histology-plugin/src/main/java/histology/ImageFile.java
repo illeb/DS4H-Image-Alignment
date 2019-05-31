@@ -25,7 +25,7 @@ import java.util.List;
 public class ImageFile {
     private String pathFile;
     private BufferedImageReader bufferedImageReader;
-    private Dimension reducedImageDimensions;
+    private Dimension editorImageDimension;
     private boolean reducedImageMode;
     private List<RoiManager> roiManagers;
 
@@ -58,13 +58,13 @@ public class ImageFile {
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
             }
-            this.reducedImageDimensions = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
 
             // after all cycles, if we did not found an alternative series of sustainable size, throw an error
             /*if(!this.reducedImageMode)
                 throw new BufferedImagesManager.ImageOversizeException();*/
         }
 
+        this.editorImageDimension = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
         this.bufferedImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
         for(int i=0; i < bufferedImageReader.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
@@ -88,7 +88,7 @@ public class ImageFile {
                 }
             }
             virtualStasck.setZ(index + 1);
-            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index),  this.reducedImageDimensions);
+            return new BufferedImage("", new ImagePlus("", virtualStasck.getProcessor()).getImage(), roiManagers.get(index),  this.editorImageDimension);
         }
     }
 
@@ -147,11 +147,11 @@ public class ImageFile {
         return this.roiManagers;
     }
 
-    public Dimension getReducedImageDimensions() {
-        return reducedImageDimensions;
+    public Dimension getEditorImageDimension() {
+        return editorImageDimension;
     }
 
-    public void setReducedImageDimensions(Dimension reducedImageDimensions) {
-        this.reducedImageDimensions = reducedImageDimensions;
+    public void setEditorImageDimension(Dimension editorImageDimension) {
+        this.editorImageDimension = editorImageDimension;
     }
 }

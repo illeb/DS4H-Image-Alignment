@@ -42,7 +42,7 @@ public class BufferedImage extends ImagePlus {
         return isReduced;
     }
 
-    public Dimension getReduceImageDimensions() {
+    public Dimension getEditorImageDimension() {
         return reduceImageDimensions;
     }
 }
