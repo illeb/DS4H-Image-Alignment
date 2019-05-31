@@ -129,7 +129,7 @@ public class ImageFile {
         displayHandler.displayOMEXML();
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0];
+        virtualStasck = readPixels(reader, process.getOptions(), displayHandler)[0].flatten();
         /*return virtualStasck;
         return new BufferedImage("", imps[0].getImage(), roiManagers.get(0), false);*/
     }
