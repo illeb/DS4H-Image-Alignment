@@ -1,5 +1,6 @@
 package histology.previewdialog;
 
+import histology.BufferedImage;
 import histology.BufferedImagesManager;
 import histology.maindialog.CustomCanvas;
 import histology.previewdialog.event.ChangeImageEvent;
@@ -18,8 +19,8 @@ public class PreviewDialog extends ImageWindow {
 
     private OnPreviewDialogEventListener listener;
     private Panel all = new Panel();
-    BufferedImagesManager.BufferedImage currentImage;
-    public PreviewDialog(BufferedImagesManager.BufferedImage startingImage, OnPreviewDialogEventListener listener, int scrollbarStartingValue, int scrollbarMaximum, String title) {
+    BufferedImage currentImage;
+    public PreviewDialog(BufferedImage startingImage, OnPreviewDialogEventListener listener, int scrollbarStartingValue, int scrollbarMaximum, String title) {
         super(startingImage, new CustomCanvas(startingImage));
         this.currentImage = startingImage;
         setTitle(title);
@@ -86,7 +87,7 @@ public class PreviewDialog extends ImageWindow {
         this.listener = listener;
     }
 
-    public void changeImage(BufferedImagesManager.BufferedImage image, String title) {
+    public void changeImage(BufferedImage image, String title) {
         this.setImage(image);
         this.currentImage = image;
         drawRois();

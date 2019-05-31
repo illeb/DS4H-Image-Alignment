@@ -1,7 +1,4 @@
-import histology.AboutDialog;
-import histology.BufferedImagesManager;
-import histology.LeastSquareImageTransformation;
-import histology.LoadingDialog;
+import histology.*;
 import histology.maindialog.MainDialog;
 import histology.mergedialog.MergeDialog;
 import histology.mergedialog.OnMergeDialogEventListener;
@@ -21,6 +18,9 @@ import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
+import ij.process.ImageProcessor;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceException;
 import loci.formats.FormatException;
 import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
@@ -38,6 +38,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /** Loads and displays a dataset using the ImageJ API. */
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
 		menuPath = "Plugins>HistologyPlugin")
 public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnMergeDialogEventListener {
 	private BufferedImagesManager manager;
-	private BufferedImagesManager.BufferedImage image = null;
+	private BufferedImage image = null;
 	private MainDialog mainDialog;
 	private PreviewDialog previewDialog;
 	private MergeDialog mergeDialog;
@@ -164,7 +165,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && roisNumber.stream().distinct().count() == 1);
+			mainDialog.setMergeButtonEnabled(roisNumber.get(0) != 0 && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
 		}
 
 		if(dialogEvent instanceof SelectedRoiEvent) {
@@ -187,15 +188,22 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		if(dialogEvent instanceof MergeEvent) {
 			ArrayList<ImagePlus> images = new ArrayList<>();
-			images.add(manager.get(0));
+			BufferedImage sourceImg = manager.get(0, true);
+			images.add(sourceImg);
 			for(int i=1; i < manager.getNImages(); i++)
-				images.add(LeastSquareImageTransformation.transform(manager.get(i),manager.get(0)));
+				images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 			mergedImagePath = IJ.getDir("temp") + stack.hashCode();
 			new FileSaver(stack).saveAsTiff(mergedImagePath);
+			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + mergedImagePath);
 			mergeDialog = new MergeDialog(stack, this);
 			mergeDialog.pack();
 			mergeDialog.setVisible(true);
+
+			try {
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		if(dialogEvent instanceof OpenFileEvent || dialogEvent instanceof ExitEvent) {
@@ -255,7 +263,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			histology.previewdialog.event.ChangeImageEvent event = (histology.previewdialog.event.ChangeImageEvent)dialogEvent;
 			new Thread(() -> {
 				WindowManager.setCurrentWindow(image.getWindow());
-				BufferedImagesManager.BufferedImage image = manager.get(event.getIndex());
+				BufferedImage image = manager.get(event.getIndex());
 				IJ.freeMemory();
 				previewDialog.changeImage(image, "Preview Image " + (event.getIndex()+1) + "/" + manager.getNImages());
 				this.loadingDialog.hideDialog();
@@ -272,13 +280,17 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	public void onMergeDialogEventListener(IMergeDialogEvent dialogEvent) {
 
 		if(dialogEvent instanceof SaveEvent) {
+			loadingDialog.showDialog();
 			SaveDialog saveDialog = new SaveDialog("Save as", "merged", ".tiff");
-			if (saveDialog.getFileName()==null)
+			if (saveDialog.getFileName()==null) {
+				loadingDialog.hideDialog();
 				return;
+			}
 			String path = saveDialog.getDirectory()+saveDialog.getFileName();
 			new FileSaver(mergeDialog.getImagePlus()).saveAsTiff(path);
 			JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
 			this.mergedImageSaved = true;
+			loadingDialog.hideDialog();
 		}
 
 		if(dialogEvent instanceof ReuseImageEvent) {
@@ -329,7 +341,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setVisible(true);
 
 			this.loadingDialog.hideDialog();
-			if(manager.isReducedImageMode())
+			if(image.isReduced())
 				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
 				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
@@ -358,18 +370,14 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	 * Dispose all the opened workload objects.
 	 */
 	private void disposeAll() {
-		try {
-			this.mainDialog.dispose();
-			this.loadingDialog.hideDialog();
-			this.loadingDialog.dispose();
-			if(this.previewDialog != null)
-				this.previewDialog.dispose();
-			if(this.mergeDialog != null)
-				this.mergeDialog.dispose();
-			this.manager.dispose();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.mainDialog.dispose();
+		this.loadingDialog.hideDialog();
+		this.loadingDialog.dispose();
+		if(this.previewDialog != null)
+			this.previewDialog.dispose();
+		if(this.mergeDialog != null)
+			this.mergeDialog.dispose();
+		this.manager.dispose();
 		IJ.freeMemory();
 	}
 
