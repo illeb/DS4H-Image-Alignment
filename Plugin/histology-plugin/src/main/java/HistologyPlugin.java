@@ -139,10 +139,10 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof DeleteRoiEvent){
-		    DeleteRoiEvent event = (DeleteRoiEvent)dialogEvent;
-		    image.getManager().select(event.getRoiIndex());
-		    image.getManager().runCommand("Delete");
-		    mainDialog.drawRois(image.getManager());
+			DeleteRoiEvent event = (DeleteRoiEvent)dialogEvent;
+			image.getManager().select(event.getRoiIndex());
+			image.getManager().runCommand("Delete");
+			mainDialog.drawRois(image.getManager());
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.drawRois();
 
@@ -150,13 +150,13 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
 			// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
 			mainDialog.setMergeButtonEnabled(roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
-        }
+		}
 
 		if(dialogEvent instanceof AddRoiEvent) {
 			AddRoiEvent event = (AddRoiEvent)dialogEvent;
 
-			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? image.getWidth() : Toolkit.getDefaultToolkit().getScreenSize().width;
-			roiWidth /= 12;
+			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? Toolkit.getDefaultToolkit().getScreenSize().width : image.getWidth() ;
+			roiWidth = (int)(roiWidth * 0.03);
 			OvalRoi roi = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
 			roi.setCornerDiameter(10);
 			roi.setFillColor(Color.red);
@@ -199,6 +199,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof MergeEvent) {
+			this.loadingDialog.showDialog();
 			ArrayList<ImagePlus> images = new ArrayList<>();
 			BufferedImage sourceImg = manager.get(0, true);
 			images.add(sourceImg);
@@ -209,6 +210,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			String filePath = IJ.getDir("temp") + stack.hashCode();
 			mergedImagePaths.add(filePath);
 			new FileSaver(stack).saveAsTiff(filePath);
+			this.loadingDialog.hideDialog();
 			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
 			mergeDialog = new MergeDialog(stack, this);
 			mergeDialog.pack();
