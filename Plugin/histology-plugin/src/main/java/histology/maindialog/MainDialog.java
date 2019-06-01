@@ -36,6 +36,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_prevImage;
     private JButton btn_nextImage;
     private JButton btn_mergeImages;
+    private JButton btn_copyCorners;
 
     private JList<String> lst_rois;
     private DefaultListModel<String> lst_rois_model;
@@ -101,8 +102,14 @@ public class MainDialog extends ImageWindow {
         scrollPane.setMinimumSize(new Dimension(180, 180));
         scrollPane.setMaximumSize(new Dimension(180, 180));
         trainingJPanel.add(scrollPane, trainingConstraints);
+        trainingConstraints.insets = new Insets(5, 0, 10, 0);
+        trainingConstraints.gridy++;
         lst_rois.setBackground(Color.white);
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        btn_copyCorners = new JButton();
+        btn_copyCorners.setText("COPY CORNERS");
+        btn_copyCorners.setEnabled(false);
+        trainingJPanel.add(btn_copyCorners, trainingConstraints);
         trainingJPanel.setLayout(trainingLayout);
 
         // Options panel
@@ -187,6 +194,9 @@ public class MainDialog extends ImageWindow {
 
         this.eventListener = listener;
 
+        btn_copyCorners.addActionListener(e-> {
+             this.eventListener.onMainDialogEvent(new CopyCornersEvent());
+        });
         chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEvent(chk_showPreview.isSelected())));
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
@@ -343,6 +353,10 @@ public class MainDialog extends ImageWindow {
 
     public void setMergeButtonEnabled(boolean enabled) {
         this.btn_mergeImages.setEnabled(enabled);
+    }
+
+    public void setCopyCornersEnabled(boolean enabled) {
+        this.btn_copyCorners.setEnabled(enabled);
     }
 
     private class KeyboardEventDispatcher implements KeyEventDispatcher {

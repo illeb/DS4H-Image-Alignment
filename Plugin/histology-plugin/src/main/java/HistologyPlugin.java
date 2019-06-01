@@ -18,6 +18,7 @@ import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
@@ -63,6 +64,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String MERGED_IMAGE_NOT_SAVED_MESSAGE  = "Merged image not saved: are you sure you want to exit without saving?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
+	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
 	static private String UNKNOWN_FORMAT_MESSAGE = "Error: trying to open a file with a unsupported format.";
 	public static void main(final String... args) {
@@ -134,6 +136,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				mainDialog.setNextImageButtonEnabled(manager.hasNext());
 				mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
 				this.loadingDialog.hideDialog();
+
+				refreshRoiGUI();
 			}).start();
 			this.loadingDialog.showDialog();
 		}
@@ -142,14 +146,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			DeleteRoiEvent event = (DeleteRoiEvent)dialogEvent;
 			image.getManager().select(event.getRoiIndex());
 			image.getManager().runCommand("Delete");
-			mainDialog.drawRois(image.getManager());
-			if(previewDialog != null && previewDialog.isVisible())
-				previewDialog.drawRois();
 
-			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
-			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-			// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
-			mainDialog.setMergeButtonEnabled(roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
+			refreshRoiGUI();
 		}
 
 		if(dialogEvent instanceof AddRoiEvent) {
@@ -170,14 +168,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			roi.setImage(image);
 			image.getManager().add(image, roi, image.getManager().getRoisAsArray().length + 1);
 
-			mainDialog.drawRois(image.getManager());
-			if(previewDialog != null && previewDialog.isVisible())
-				previewDialog.drawRois();
-
-			// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
-			List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-			// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
-			mainDialog.setMergeButtonEnabled(roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1);
+			refreshRoiGUI();
 		}
 
 		if(dialogEvent instanceof SelectedRoiEvent) {
@@ -271,6 +262,34 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
 		}
+
+		if(dialogEvent instanceof CopyCornersEvent) {
+			// get the indexes of all roi managers with at least a roi added
+			List<Integer> imageIndexes =  manager.getRoiManagers().stream()
+					.filter(roiManager -> roiManager.getRoisAsArray().length != 0)
+					.map(roiManager -> manager.getRoiManagers().indexOf(roiManager))
+					.filter(index -> index != manager.getCurrentIndex())// remove the index of the current image, if present.
+					.collect(Collectors.toList());
+
+			Object[] options = imageIndexes.stream().map(imageIndex -> "Image " + (imageIndex + 1)).toArray();
+			JComboBox optionList = new JComboBox(options);
+			optionList.setSelectedIndex(0);
+
+			int n = JOptionPane.showOptionDialog(new JFrame(), optionList,
+					"Copy from", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+					null, new Object[] {"Copy", "Cancel"}, JOptionPane.YES_OPTION);
+
+			if (n == JOptionPane.YES_OPTION) {
+				RoiManager selectedManager = manager.getRoiManagers().get(imageIndexes.get(optionList.getSelectedIndex()));
+				List<Point> roiPoints = Arrays.stream(selectedManager.getRoisAsArray()).map(roi -> new Point((int)roi.getRotationCenter().xpoints[0], (int)roi.getRotationCenter().ypoints[0]))
+						.collect(Collectors.toList());
+				roiPoints.stream().filter(roiCoords-> roiCoords.x < image.getWidth() && roiCoords.y < image.getHeight())
+						.forEach(roiCoords ->this.onMainDialogEvent(new AddRoiEvent(roiCoords)));
+
+				if(roiPoints.stream().anyMatch(roiCoords-> roiCoords.x > image.getWidth() || roiCoords.y > image.getHeight()))
+					JOptionPane.showMessageDialog(null, ROI_NOT_ADDED_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
+			}
+		}
 	}
 
 	@Override
@@ -327,6 +346,27 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 	}
 
+	/**
+	 * Refresh all the Roi-based guis in the maindialog
+	 */
+	private void refreshRoiGUI() {
+
+		mainDialog.drawRois(image.getManager());
+		if(previewDialog != null && previewDialog.isVisible())
+			previewDialog.drawRois();
+
+		// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
+		List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
+		boolean mergeButtonEnabled = roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1;
+		// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
+		mainDialog.setMergeButtonEnabled(mergeButtonEnabled);
+
+		boolean copyCornersEnabled = manager.getRoiManagers().stream()
+				.filter(roiManager -> roiManager.getRoisAsArray().length != 0)
+				.map(roiManager -> manager.getRoiManagers().indexOf(roiManager))
+				.filter(index -> index != manager.getCurrentIndex()).count() != 0;
+		mainDialog.setCopyCornersEnabled(copyCornersEnabled);
+	}
 	/**
 	 * Initialize the plugin opening the file specified in the mandatory param
 	 */
