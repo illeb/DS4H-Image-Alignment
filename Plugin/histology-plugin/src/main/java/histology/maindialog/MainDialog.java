@@ -128,6 +128,8 @@ public class MainDialog extends ImageWindow {
         actionsConstraints.gridy++;
         actionsJPanel.add(btn_mergeImages, actionsConstraints);
         actionsConstraints.gridy++;
+        actionsConstraints.gridy++;
+        actionsJPanel.add(new JLabel("<html><body><br>Press \"C\" to add a corner point</body> </html>"), actionsConstraints);
 
         // Buttons panel (including training and options)
         GridBagLayout buttonsLayout = new GridBagLayout();
