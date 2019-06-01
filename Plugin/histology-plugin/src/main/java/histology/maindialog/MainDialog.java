@@ -150,6 +150,8 @@ public class MainDialog extends ImageWindow {
         GridBagLayout layout = new GridBagLayout();
         GridBagConstraints allConstraints = new GridBagConstraints();
         all.setLayout(layout);
+        // sets a little bit of padding to ensure that the imageplus text is shown and not covered by the panel
+        allConstraints.insets = new Insets(5, 0, 0, 0);
 
         allConstraints.anchor = GridBagConstraints.NORTHWEST;
         allConstraints.fill = GridBagConstraints.BOTH;
