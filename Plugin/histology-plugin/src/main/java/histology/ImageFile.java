@@ -2,6 +2,7 @@ package histology;
 
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
+import ij.process.ImageConverter;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
 import loci.common.services.ServiceFactory;
@@ -130,7 +131,7 @@ public class ImageFile {
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
         virtualStack = readPixels(reader, process.getOptions(), displayHandler)[0];
-        virtualStack.flattenStack();
+        new ImageConverter(virtualStack).convertToRGB();
     }
 
     public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
