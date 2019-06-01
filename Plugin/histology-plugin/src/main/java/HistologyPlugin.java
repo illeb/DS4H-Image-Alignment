@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>HistologyPlugin")
+		menuPath = "Plugins>Histology Plugin")
 public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnMergeDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;

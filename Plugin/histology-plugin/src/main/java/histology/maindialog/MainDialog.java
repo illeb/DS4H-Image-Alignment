@@ -43,6 +43,7 @@ public class MainDialog extends ImageWindow {
     private BufferedImage image;
 
     private boolean mouseOverCanvas;
+    private static String DIALOG_STATIC_TITLE = "Histology Plugin";
 
     private Rectangle oldRect = null;
     public MainDialog(BufferedImage plus, OnMainDialogEventListener listener) {
@@ -349,5 +350,10 @@ public class MainDialog extends ImageWindow {
             }
             return false;
         }
+    }
+
+    @Override
+    public void setTitle(String title){
+        super.setTitle(DIALOG_STATIC_TITLE + "  " + title);
     }
 }
