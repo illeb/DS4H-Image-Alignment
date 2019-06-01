@@ -66,7 +66,7 @@ public class MainDialog extends ImageWindow {
         btn_nextImage.setToolTipText("Select next image in the stack");
 
         btn_mergeImages = new JButton ("MERGE");
-        btn_mergeImages.setToolTipText("Merge the images based on the added landmarks");
+        btn_mergeImages.setToolTipText("Merge the images based on the added corner points");
         btn_mergeImages.setEnabled(false);
 
         // Remove the canvas from the window, to add it later
@@ -82,7 +82,7 @@ public class MainDialog extends ImageWindow {
         annotationsConstraints.gridy = 0;
 
         // Training panel (left side of the GUI)
-        trainingJPanel.setBorder(BorderFactory.createTitledBorder("Rois"));
+        trainingJPanel.setBorder(BorderFactory.createTitledBorder("Corners"));
         GridBagLayout trainingLayout = new GridBagLayout();
         GridBagConstraints trainingConstraints = new GridBagConstraints();
         trainingConstraints.anchor = GridBagConstraints.NORTHWEST;
