@@ -55,7 +55,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	private boolean alignedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
-	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: merging operation will be unavailable.";
+	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: align operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String ALIGNED_IMAGE_NOT_SAVED_MESSAGE = "Aligned images not saved: are you sure you want to exit without saving?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
@@ -187,26 +187,22 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 
 		if(dialogEvent instanceof AlignEvent) {
 			this.loadingDialog.showDialog();
-			ArrayList<ImagePlus> images = new ArrayList<>();
-			BufferedImage sourceImg = manager.get(0, true);
-			images.add(sourceImg);
-			for(int i=1; i < manager.getNImages(); i++)
-				images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
-			long memory = IJ.currentMemory();
-			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-			String filePath = IJ.getDir("temp") + stack.hashCode();
-			alignedImagePaths.add(filePath);
-			new FileSaver(stack).saveAsTiff(filePath);
-			this.loadingDialog.hideDialog();
-			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
-			alignDialog = new AlignDialog(stack, this);
-			alignDialog.pack();
-			alignDialog.setVisible(true);
-
-			try {
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			Utilities.setTimeout(() -> {
+				ArrayList<ImagePlus> images = new ArrayList<>();
+				BufferedImage sourceImg = manager.get(0, true);
+				images.add(sourceImg);
+				for(int i=1; i < manager.getNImages(); i++)
+					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
+				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+				String filePath = IJ.getDir("temp") + stack.hashCode();
+				alignedImagePaths.add(filePath);
+				new FileSaver(stack).saveAsTiff(filePath);
+				this.loadingDialog.hideDialog();
+				JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
+				alignDialog = new AlignDialog(stack, this);
+				alignDialog.pack();
+				alignDialog.setVisible(true);
+			}, 10);
 		}
 
 		if(dialogEvent instanceof OpenFileEvent || dialogEvent instanceof ExitEvent) {
