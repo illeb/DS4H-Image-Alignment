@@ -1,12 +1,10 @@
 package histology.maindialog;
 
 import histology.BufferedImage;
-import histology.BufferedImagesManager;
 import histology.maindialog.event.*;
 import ij.IJ;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
-import ij.io.OpenDialog;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
 
@@ -35,7 +33,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_deleteRoi;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
-    private JButton btn_mergeImages;
+    private JButton btn_alignImages;
     private JButton btn_copyCorners;
 
     private JList<String> lst_rois;
@@ -44,7 +42,7 @@ public class MainDialog extends ImageWindow {
     private BufferedImage image;
 
     private boolean mouseOverCanvas;
-    private static String DIALOG_STATIC_TITLE = "Histology Plugin";
+    private static String DIALOG_STATIC_TITLE = "Histology Plugin.";
 
     private Rectangle oldRect = null;
     public MainDialog(BufferedImage plus, OnMainDialogEventListener listener) {
@@ -56,8 +54,8 @@ public class MainDialog extends ImageWindow {
         chk_showPreview = new JCheckBox("Show preview window");
         chk_showPreview.setToolTipText("Show a preview window");
 
-        btn_deleteRoi = new JButton ("DELETE");
-        btn_deleteRoi.setToolTipText("Delete current ROI selected");
+        btn_deleteRoi = new JButton ("DELETE CORNER");
+        btn_deleteRoi.setToolTipText("Delete current corner point selected");
         btn_deleteRoi.setEnabled(false);
 
         btn_prevImage = new JButton ("PREV IMAGE");
@@ -66,9 +64,9 @@ public class MainDialog extends ImageWindow {
         btn_nextImage = new JButton ("NEXT IMAGE");
         btn_nextImage.setToolTipText("Select next image in the stack");
 
-        btn_mergeImages = new JButton ("MERGE");
-        btn_mergeImages.setToolTipText("Merge the images based on the added corner points");
-        btn_mergeImages.setEnabled(false);
+        btn_alignImages = new JButton ("ALIGN IMAGES");
+        btn_alignImages.setToolTipText("Align the images based on the added corner points");
+        btn_alignImages.setEnabled(false);
 
         // Remove the canvas from the window, to add it later
         removeAll();
@@ -133,7 +131,7 @@ public class MainDialog extends ImageWindow {
         actionsConstraints.gridy++;
         actionsJPanel.add(btn_nextImage, actionsConstraints);
         actionsConstraints.gridy++;
-        actionsJPanel.add(btn_mergeImages, actionsConstraints);
+        actionsJPanel.add(btn_alignImages, actionsConstraints);
         actionsConstraints.gridy++;
         actionsConstraints.gridy++;
         actionsJPanel.add(new JLabel("<html><body><br>Press \"C\" to add a corner point</body> </html>"), actionsConstraints);
@@ -178,6 +176,7 @@ public class MainDialog extends ImageWindow {
 
         GridBagLayout wingb = new GridBagLayout();
         GridBagConstraints winc = new GridBagConstraints();
+        winc.insets = new Insets(5, 0, 10, 0);
         winc.anchor = GridBagConstraints.NORTHWEST;
         winc.fill = GridBagConstraints.BOTH;
         winc.weightx = 1;
@@ -205,7 +204,7 @@ public class MainDialog extends ImageWindow {
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-        btn_mergeImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new MergeEvent()));
+        btn_alignImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new AlignEvent()));
 
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -351,8 +350,8 @@ public class MainDialog extends ImageWindow {
         this.btn_prevImage.setEnabled(enabled);
     }
 
-    public void setMergeButtonEnabled(boolean enabled) {
-        this.btn_mergeImages.setEnabled(enabled);
+    public void setAlignButtonEnabled(boolean enabled) {
+        this.btn_alignImages.setEnabled(enabled);
     }
 
     public void setCopyCornersEnabled(boolean enabled) {
@@ -372,6 +371,6 @@ public class MainDialog extends ImageWindow {
 
     @Override
     public void setTitle(String title){
-        super.setTitle(DIALOG_STATIC_TITLE + "  " + title);
+        super.setTitle(DIALOG_STATIC_TITLE + " " + title);
     }
 }
