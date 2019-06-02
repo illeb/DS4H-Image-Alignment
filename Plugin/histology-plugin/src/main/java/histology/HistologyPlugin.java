@@ -1,4 +1,5 @@
-import histology.*;
+package histology;
+
 import histology.maindialog.MainDialog;
 import histology.aligndialog.AlignDialog;
 import histology.aligndialog.OnAlignDialogEventListener;

@@ -67,7 +67,7 @@
 	</ciManagement>
 
 	<properties>
-		<main-class>HistologyPlugin</main-class>
+		<main-class>histology.HistologyPlugin</main-class>
 		<license.licenseName>cc0</license.licenseName>
 		<license.copyrightOwners>N/A</license.copyrightOwners>
 		<license.projectName>ImageJ software for multidimensional image processing and analysis.</license.projectName>

@@ -1,3 +1,5 @@
+package histology;
+
 /**
  * Class containing various utilities of the plugin
  */
