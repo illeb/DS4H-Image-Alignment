@@ -264,6 +264,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			}
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
+			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
 			refreshRoiGUI();
 		}
 
