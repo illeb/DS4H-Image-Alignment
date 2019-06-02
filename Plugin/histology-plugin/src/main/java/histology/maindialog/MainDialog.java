@@ -176,6 +176,7 @@ public class MainDialog extends ImageWindow {
 
         GridBagLayout wingb = new GridBagLayout();
         GridBagConstraints winc = new GridBagConstraints();
+        winc.insets = new Insets(5, 0, 10, 0);
         winc.anchor = GridBagConstraints.NORTHWEST;
         winc.fill = GridBagConstraints.BOTH;
         winc.weightx = 1;
