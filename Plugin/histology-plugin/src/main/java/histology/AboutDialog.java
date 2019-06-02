@@ -18,6 +18,8 @@ public class AboutDialog extends JDialog {
     private JLabel lbl_supervisor2;
     private JLabel lbl_author1;
     private JPanel pnl_credits;
+    private JPanel pnl_heads;
+    private JPanel pnl_authors;
 
     public AboutDialog() {
         setContentPane(contentPane);
@@ -37,8 +39,8 @@ public class AboutDialog extends JDialog {
         // call onCancel() on ESCAPE
         contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
-        this.setMinimumSize(new Dimension(350,300));
-        this.setMaximumSize(new Dimension(350,300));
+        this.setMinimumSize(new Dimension(470,340));
+        this.setMaximumSize(new Dimension(470,340));
         this.setResizable(false);
         this.setTitle("About...");
 

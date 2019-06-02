@@ -36,6 +36,7 @@ public class MainDialog extends ImageWindow {
     private JButton btn_prevImage;
     private JButton btn_nextImage;
     private JButton btn_mergeImages;
+    private JButton btn_copyCorners;
 
     private JList<String> lst_rois;
     private DefaultListModel<String> lst_rois_model;
@@ -43,6 +44,7 @@ public class MainDialog extends ImageWindow {
     private BufferedImage image;
 
     private boolean mouseOverCanvas;
+    private static String DIALOG_STATIC_TITLE = "Histology Plugin";
 
     private Rectangle oldRect = null;
     public MainDialog(BufferedImage plus, OnMainDialogEventListener listener) {
@@ -65,7 +67,7 @@ public class MainDialog extends ImageWindow {
         btn_nextImage.setToolTipText("Select next image in the stack");
 
         btn_mergeImages = new JButton ("MERGE");
-        btn_mergeImages.setToolTipText("Merge the images based on the added landmarks");
+        btn_mergeImages.setToolTipText("Merge the images based on the added corner points");
         btn_mergeImages.setEnabled(false);
 
         // Remove the canvas from the window, to add it later
@@ -81,7 +83,7 @@ public class MainDialog extends ImageWindow {
         annotationsConstraints.gridy = 0;
 
         // Training panel (left side of the GUI)
-        trainingJPanel.setBorder(BorderFactory.createTitledBorder("Rois"));
+        trainingJPanel.setBorder(BorderFactory.createTitledBorder("Corners"));
         GridBagLayout trainingLayout = new GridBagLayout();
         GridBagConstraints trainingConstraints = new GridBagConstraints();
         trainingConstraints.anchor = GridBagConstraints.NORTHWEST;
@@ -100,8 +102,14 @@ public class MainDialog extends ImageWindow {
         scrollPane.setMinimumSize(new Dimension(180, 180));
         scrollPane.setMaximumSize(new Dimension(180, 180));
         trainingJPanel.add(scrollPane, trainingConstraints);
+        trainingConstraints.insets = new Insets(5, 0, 10, 0);
+        trainingConstraints.gridy++;
         lst_rois.setBackground(Color.white);
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        btn_copyCorners = new JButton();
+        btn_copyCorners.setText("COPY CORNERS");
+        btn_copyCorners.setEnabled(false);
+        trainingJPanel.add(btn_copyCorners, trainingConstraints);
         trainingJPanel.setLayout(trainingLayout);
 
         // Options panel
@@ -127,6 +135,8 @@ public class MainDialog extends ImageWindow {
         actionsConstraints.gridy++;
         actionsJPanel.add(btn_mergeImages, actionsConstraints);
         actionsConstraints.gridy++;
+        actionsConstraints.gridy++;
+        actionsJPanel.add(new JLabel("<html><body><br>Press \"C\" to add a corner point</body> </html>"), actionsConstraints);
 
         // Buttons panel (including training and options)
         GridBagLayout buttonsLayout = new GridBagLayout();
@@ -147,6 +157,8 @@ public class MainDialog extends ImageWindow {
         GridBagLayout layout = new GridBagLayout();
         GridBagConstraints allConstraints = new GridBagConstraints();
         all.setLayout(layout);
+        // sets a little bit of padding to ensure that the imageplus text is shown and not covered by the panel
+        allConstraints.insets = new Insets(5, 0, 0, 0);
 
         allConstraints.anchor = GridBagConstraints.NORTHWEST;
         allConstraints.fill = GridBagConstraints.BOTH;
@@ -182,6 +194,9 @@ public class MainDialog extends ImageWindow {
 
         this.eventListener = listener;
 
+        btn_copyCorners.addActionListener(e-> {
+             this.eventListener.onMainDialogEvent(new CopyCornersEvent());
+        });
         chk_showPreview.addItemListener(e -> this.eventListener.onMainDialogEvent(new PreviewImageEvent(chk_showPreview.isSelected())));
         btn_deleteRoi.addActionListener(e -> {
             int index = lst_rois.getSelectedIndex();
@@ -340,6 +355,10 @@ public class MainDialog extends ImageWindow {
         this.btn_mergeImages.setEnabled(enabled);
     }
 
+    public void setCopyCornersEnabled(boolean enabled) {
+        this.btn_copyCorners.setEnabled(enabled);
+    }
+
     private class KeyboardEventDispatcher implements KeyEventDispatcher {
         @Override
         public boolean dispatchKeyEvent(KeyEvent e) {
@@ -349,5 +368,10 @@ public class MainDialog extends ImageWindow {
             }
             return false;
         }
+    }
+
+    @Override
+    public void setTitle(String title){
+        super.setTitle(DIALOG_STATIC_TITLE + "  " + title);
     }
 }

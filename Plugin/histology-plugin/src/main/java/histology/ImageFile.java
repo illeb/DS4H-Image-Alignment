@@ -2,10 +2,13 @@ package histology;
 
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
+import ij.process.ImageConverter;
+import loci.common.Region;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
+import loci.formats.FormatTools;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
@@ -45,6 +48,7 @@ public class ImageFile {
             throw new FormatException("Could not create OME-XML store.", exc);
         }
         imageReader.setId(pathFile);
+
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
             /*if(imageReader.getSeriesCount() <= 1)
@@ -130,7 +134,7 @@ public class ImageFile {
         process.execute();
         ImagePlusReader reader = new ImagePlusReader(process);
         virtualStack = readPixels(reader, process.getOptions(), displayHandler)[0];
-        virtualStack.flattenStack();
+        new ImageConverter(virtualStack).convertToRGB();
     }
 
     public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
@@ -146,6 +150,17 @@ public class ImageFile {
         return this.roiManagers;
     }
 
+    public static long estimateMemoryUsage(String pathFile)throws IOException, FormatException, DependencyException, ServiceException {
+        ImporterOptions options = new ImporterOptions();
+        options.loadOptions();
+        options.setVirtual(false);
+        options.setId(pathFile);
+        options.setSplitChannels(false);
+        options.setSeriesOn(0, true);
+        ImportProcess process = new ImportProcess(options);
+        process.execute();
+        return process.getMemoryUsage() * 3;
+    }
     public Dimension getEditorImageDimension() {
         return editorImageDimension;
     }
