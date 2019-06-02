@@ -19,10 +19,6 @@ import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
 import ij.plugin.frame.RoiManager;
-import ij.process.ImageProcessor;
-import loci.common.services.DependencyException;
-import loci.common.services.ServiceException;
-import loci.formats.FormatException;
 import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
@@ -41,7 +37,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /** Loads and displays a dataset using the ImageJ API. */
