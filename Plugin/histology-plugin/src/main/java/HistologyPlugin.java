@@ -319,17 +319,17 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	public void onMergeDialogEventListener(IMergeDialogEvent dialogEvent) {
 
 		if(dialogEvent instanceof SaveEvent) {
-			loadingDialog.showDialog();
-			SaveDialog saveDialog = new SaveDialog("Save as", "merged", ".tiff");
-			if (saveDialog.getFileName()==null) {
-				loadingDialog.hideDialog();
-				return;
-			}
-			String path = saveDialog.getDirectory()+saveDialog.getFileName();
-			new FileSaver(mergeDialog.getImagePlus()).saveAsTiff(path);
-			JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
-			this.mergedImageSaved = true;
-			loadingDialog.hideDialog();
+            SaveDialog saveDialog = new SaveDialog("Save as", "merged", ".tiff");
+            if (saveDialog.getFileName()==null) {
+                loadingDialog.hideDialog();
+                return;
+            }
+            String path = saveDialog.getDirectory()+saveDialog.getFileName();
+            loadingDialog.showDialog();
+            new FileSaver(mergeDialog.getImagePlus()).saveAsTiff(path);
+            loadingDialog.hideDialog();
+            JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
+            this.mergedImageSaved = true;
 		}
 
 		if(dialogEvent instanceof ReuseImageEvent) {
