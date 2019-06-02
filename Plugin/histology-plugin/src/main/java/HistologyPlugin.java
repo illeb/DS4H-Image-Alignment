@@ -1,10 +1,10 @@
 import histology.*;
 import histology.maindialog.MainDialog;
-import histology.mergedialog.MergeDialog;
-import histology.mergedialog.OnMergeDialogEventListener;
-import histology.mergedialog.event.IMergeDialogEvent;
-import histology.mergedialog.event.ReuseImageEvent;
-import histology.mergedialog.event.SaveEvent;
+import histology.aligndialog.AlignDialog;
+import histology.aligndialog.OnAlignDialogEventListener;
+import histology.aligndialog.event.IAlignDialogEvent;
+import histology.aligndialog.event.ReuseImageEvent;
+import histology.aligndialog.event.SaveEvent;
 import histology.previewdialog.OnPreviewDialogEventListener;
 import histology.previewdialog.PreviewDialog;
 import histology.maindialog.OnMainDialogEventListener;
@@ -42,22 +42,22 @@ import java.util.stream.Collectors;
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>Histology Plugin")
-public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnMergeDialogEventListener {
+public class HistologyPlugin extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;
 	private MainDialog mainDialog;
 	private PreviewDialog previewDialog;
-	private MergeDialog mergeDialog;
+	private AlignDialog alignDialog;
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
 
-	private List<String> mergedImagePaths = new ArrayList<>();
-	private boolean mergedImageSaved = false;
+	private List<String> alignedImagePaths = new ArrayList<>();
+	private boolean alignedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
 	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: merging operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
-	static private String MERGED_IMAGE_NOT_SAVED_MESSAGE  = "Merged image not saved: are you sure you want to exit without saving?";
+	static private String ALIGNED_IMAGE_NOT_SAVED_MESSAGE = "Aligned images not saved: are you sure you want to exit without saving?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
 	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
@@ -80,7 +80,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.initialize(pathFile);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			this.mergedImagePaths.forEach(imagePath -> {
+			this.alignedImagePaths.forEach(imagePath -> {
 				try {
 					Files.deleteIfExists(Paths.get(imagePath));
 				} catch (IOException e) { }
@@ -185,7 +185,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			previewDialog.drawRois();
 		}
 
-		if(dialogEvent instanceof MergeEvent) {
+		if(dialogEvent instanceof AlignEvent) {
 			this.loadingDialog.showDialog();
 			ArrayList<ImagePlus> images = new ArrayList<>();
 			BufferedImage sourceImg = manager.get(0, true);
@@ -195,13 +195,13 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			long memory = IJ.currentMemory();
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 			String filePath = IJ.getDir("temp") + stack.hashCode();
-			mergedImagePaths.add(filePath);
+			alignedImagePaths.add(filePath);
 			new FileSaver(stack).saveAsTiff(filePath);
 			this.loadingDialog.hideDialog();
 			JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
-			mergeDialog = new MergeDialog(stack, this);
-			mergeDialog.pack();
-			mergeDialog.setVisible(true);
+			alignDialog = new AlignDialog(stack, this);
+			alignDialog.pack();
+			alignDialog.setVisible(true);
 
 			try {
 			} catch (Exception e) {
@@ -316,37 +316,37 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	}
 
 	@Override
-	public void onMergeDialogEventListener(IMergeDialogEvent dialogEvent) {
+	public void onAlignDialogEventListener(IAlignDialogEvent dialogEvent) {
 
 		if(dialogEvent instanceof SaveEvent) {
-            SaveDialog saveDialog = new SaveDialog("Save as", "merged", ".tiff");
+            SaveDialog saveDialog = new SaveDialog("Save as", "aligned", ".tiff");
             if (saveDialog.getFileName()==null) {
                 loadingDialog.hideDialog();
                 return;
             }
             String path = saveDialog.getDirectory()+saveDialog.getFileName();
             loadingDialog.showDialog();
-            new FileSaver(mergeDialog.getImagePlus()).saveAsTiff(path);
+            new FileSaver(alignDialog.getImagePlus()).saveAsTiff(path);
             loadingDialog.hideDialog();
             JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
-            this.mergedImageSaved = true;
+            this.alignedImageSaved = true;
 		}
 
 		if(dialogEvent instanceof ReuseImageEvent) {
 			this.disposeAll();
-			this.initialize(mergedImagePaths.get(mergedImagePaths.size()-1));
+			this.initialize(alignedImagePaths.get(alignedImagePaths.size()-1));
 		}
 
-		if(dialogEvent instanceof histology.mergedialog.event.ExitEvent) {
-			if(!mergedImageSaved) {
+		if(dialogEvent instanceof histology.aligndialog.event.ExitEvent) {
+			if(!alignedImageSaved) {
 				String[] buttons = { "Yes", "No"};
-				int answer = JOptionPane.showOptionDialog(null, MERGED_IMAGE_NOT_SAVED_MESSAGE, "Careful now",
+				int answer = JOptionPane.showOptionDialog(null, ALIGNED_IMAGE_NOT_SAVED_MESSAGE, "Careful now",
 						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
 				if(answer == 1)
 					return;
 			}
-			mergeDialog.setVisible(false);
-			mergeDialog.dispose();
+			alignDialog.setVisible(false);
+			alignDialog.dispose();
 		}
 	}
 
@@ -359,11 +359,11 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		if(previewDialog != null && previewDialog.isVisible())
 			previewDialog.drawRois();
 
-		// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "merge" functionality
+		// Get the number of rois added in each image. If they are all the same (and at least one is added), we can enable the "align" functionality
 		List<Integer> roisNumber = manager.getRoiManagers().stream().map(roiManager -> roiManager.getRoisAsArray().length).collect(Collectors.toList());
-		boolean mergeButtonEnabled = roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1;
+		boolean alignButtonEnabled = roisNumber.get(0) >= LeastSquareImageTransformation.MINIMUM_ROI_NUMBER && manager.getNImages() > 1 && roisNumber.stream().distinct().count() == 1;
 		// check if: the number of images is more than 1, ALL the images has the same number of rois added and the ROI numbers are more than 3
-		mainDialog.setMergeButtonEnabled(mergeButtonEnabled);
+		mainDialog.setAlignButtonEnabled(alignButtonEnabled);
 
 		boolean copyCornersEnabled = manager.getRoiManagers().stream()
 				.filter(roiManager -> roiManager.getRoisAsArray().length != 0)
@@ -386,7 +386,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.aboutDialog = new AboutDialog();
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
-		mergedImageSaved = false;
+		alignedImageSaved = false;
 
 		try {
 
@@ -447,8 +447,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.loadingDialog.dispose();
 		if(this.previewDialog != null)
 			this.previewDialog.dispose();
-		if(this.mergeDialog != null)
-			this.mergeDialog.dispose();
+		if(this.alignDialog != null)
+			this.alignDialog.dispose();
 		this.manager.dispose();
 		IJ.freeMemory();
 		TotalMemory = 0;
