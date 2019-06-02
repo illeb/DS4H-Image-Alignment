@@ -67,6 +67,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
 	static private String UNKNOWN_FORMAT_MESSAGE = "Error: trying to open a file with a unsupported format.";
+	static private long TotalMemory = 0;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
@@ -196,8 +197,8 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			images.add(sourceImg);
 			for(int i=1; i < manager.getNImages(); i++)
 				images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
+			long memory = IJ.currentMemory();
 			ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-
 			String filePath = IJ.getDir("temp") + stack.hashCode();
 			mergedImagePaths.add(filePath);
 			new FileSaver(stack).saveAsTiff(filePath);
@@ -249,18 +250,26 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof AddFileEvent) {
+			String pathFile = ((AddFileEvent) dialogEvent).getFilePath();
 			try {
-				manager.addFile(((AddFileEvent) dialogEvent).getFilePath());
+				long memory = ImageFile.estimateMemoryUsage(pathFile);
+				TotalMemory += memory;
+				if(TotalMemory >= Runtime.getRuntime().maxMemory()) {
+					JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				manager.addFile(pathFile);
 			}
 			catch(UnknownFormatException e){
 				loadingDialog.hideDialog();
-				JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: unknow format", JOptionPane.ERROR_MESSAGE);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
 			}
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 			mainDialog.setNextImageButtonEnabled(manager.hasNext());
+			refreshRoiGUI();
 		}
 
 		if(dialogEvent instanceof CopyCornersEvent) {
@@ -385,6 +394,19 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		mergedImageSaved = false;
 
 		try {
+
+			try {
+				long memory = ImageFile.estimateMemoryUsage(pathFile);
+				TotalMemory += memory;
+				if(TotalMemory >= Runtime.getRuntime().maxMemory()) {
+					JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
+					this.run();
+				}
+			}
+			catch(UnknownFormatException e){
+				loadingDialog.hideDialog();
+				JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: unknown format", JOptionPane.ERROR_MESSAGE);
+			}
 			manager = new BufferedImagesManager(pathFile);
 			image = manager.next();
 			mainDialog = new MainDialog(image, this);
@@ -434,6 +456,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 			this.mergeDialog.dispose();
 		this.manager.dispose();
 		IJ.freeMemory();
+		TotalMemory = 0;
 	}
 
 }
