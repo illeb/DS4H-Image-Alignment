@@ -112,7 +112,7 @@ public class AboutDialog extends JDialog {
         lbl_icon = new JLabel();
 
         // Thanks to https://stackoverflow.com/a/18335435/1306679
-        ImageIcon imageIcon = new ImageIcon("src/main/assets/info.png"); // load the image to a imageIcon
+        ImageIcon imageIcon = new ImageIcon(getClass().getResource("/info.png")); // load the image to a imageIcon
         Image image = imageIcon.getImage(); // transform it
         Image newimg = image.getScaledInstance(40, 40,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
         imageIcon = new ImageIcon(newimg);  // transform it back
