@@ -384,7 +384,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		this.loadingDialog = new LoadingDialog();
 		this.loadingDialog.showDialog();
 		alignedImageSaved = false;
-
+		boolean complete = false;
 		try {
 
 			try {
@@ -414,17 +414,26 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
 				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
+			complete = true;
 		}
 		catch (BufferedImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
 		}
 		catch(UnknownFormatException e){
-			loadingDialog.hideDialog();
-			JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
-			this.run();
+			JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: unknown format", JOptionPane.ERROR_MESSAGE);
+		}
+		catch(loci.common.enumeration.EnumException e) {
+			JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: unknown format", JOptionPane.ERROR_MESSAGE);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(!complete) {
+				this.loadingDialog.hideDialog();
+				this.run();
+			}
+
 		}
 	}
 
