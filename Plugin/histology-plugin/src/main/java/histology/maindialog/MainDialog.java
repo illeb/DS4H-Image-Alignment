@@ -19,26 +19,26 @@ public class MainDialog extends ImageWindow {
     private final OnMainDialogEventListener eventListener;
 
     MenuBar menuBar;
-    /** constraints for annotation panel */
-    private GridBagConstraints annotationsConstraints = new GridBagConstraints();
-
     private JPanel buttonsPanel = new JPanel();
 
-    private JPanel trainingJPanel = new JPanel();
+    private JPanel cornersJPanel = new JPanel();
+    private JList<String> lst_rois;
+    private JButton btn_copyCorners;
+
     private JPanel actionsJPanel = new JPanel();
-
-    private Panel all = new Panel();
-
     private JCheckBox chk_showPreview;
     private JButton btn_deleteRoi;
     private JButton btn_prevImage;
     private JButton btn_nextImage;
+
+
+    private JPanel alignJPanel = new JPanel();
     private JButton btn_alignImages;
-    private JButton btn_copyCorners;
+    private JCheckBox chk_rotateImages;
 
-    private JList<String> lst_rois;
+    private Panel all = new Panel();
+
     private DefaultListModel<String> lst_rois_model;
-
     private BufferedImage image;
 
     private boolean mouseOverCanvas;
@@ -68,20 +68,18 @@ public class MainDialog extends ImageWindow {
         btn_alignImages.setToolTipText("Align the images based on the added corner points");
         btn_alignImages.setEnabled(false);
 
+        chk_rotateImages = new JCheckBox("Apply image rotation");
+        chk_rotateImages.setToolTipText("Apply rotation algorithms for improved images alignment.");
+        chk_rotateImages.setSelected(true);
+        chk_rotateImages.setEnabled(false);
+
         // Remove the canvas from the window, to add it later
         removeAll();
 
         setTitle("Histology Plugin");
 
-        // Annotations panel
-        annotationsConstraints.anchor = GridBagConstraints.NORTHWEST;
-        annotationsConstraints.gridwidth = 1;
-        annotationsConstraints.gridheight = 1;
-        annotationsConstraints.gridx = 0;
-        annotationsConstraints.gridy = 0;
-
         // Training panel (left side of the GUI)
-        trainingJPanel.setBorder(BorderFactory.createTitledBorder("Corners"));
+        cornersJPanel.setBorder(BorderFactory.createTitledBorder("Corners"));
         GridBagLayout trainingLayout = new GridBagLayout();
         GridBagConstraints trainingConstraints = new GridBagConstraints();
         trainingConstraints.anchor = GridBagConstraints.NORTHWEST;
@@ -90,16 +88,18 @@ public class MainDialog extends ImageWindow {
         trainingConstraints.gridheight = 1;
         trainingConstraints.gridx = 0;
         trainingConstraints.gridy = 0;
-        trainingJPanel.setLayout(trainingLayout);
+        cornersJPanel.setLayout(trainingLayout);
 
+        cornersJPanel.add(new JLabel("Press \"C\" to add a corner point"), trainingConstraints);
+        trainingConstraints.gridy++;
+        trainingConstraints.gridy++;
         lst_rois = new JList<>();
-
         JScrollPane scrollPane = new JScrollPane(lst_rois);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setPreferredSize(new Dimension(180, 180));
         scrollPane.setMinimumSize(new Dimension(180, 180));
         scrollPane.setMaximumSize(new Dimension(180, 180));
-        trainingJPanel.add(scrollPane, trainingConstraints);
+        cornersJPanel.add(scrollPane, trainingConstraints);
         trainingConstraints.insets = new Insets(5, 0, 10, 0);
         trainingConstraints.gridy++;
         lst_rois.setBackground(Color.white);
@@ -107,8 +107,8 @@ public class MainDialog extends ImageWindow {
         btn_copyCorners = new JButton();
         btn_copyCorners.setText("COPY CORNERS");
         btn_copyCorners.setEnabled(false);
-        trainingJPanel.add(btn_copyCorners, trainingConstraints);
-        trainingJPanel.setLayout(trainingLayout);
+        cornersJPanel.add(btn_copyCorners, trainingConstraints);
+        cornersJPanel.setLayout(trainingLayout);
 
         // Options panel
         actionsJPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
@@ -116,27 +116,34 @@ public class MainDialog extends ImageWindow {
         GridBagConstraints actionsConstraints = new GridBagConstraints();
         actionsConstraints.anchor = GridBagConstraints.NORTHWEST;
         actionsConstraints.fill = GridBagConstraints.HORIZONTAL;
-        actionsConstraints.gridwidth = 1;
-        actionsConstraints.gridheight = 1;
+        actionsConstraints.weightx = 1;
         actionsConstraints.gridx = 0;
-        actionsConstraints.gridy = 0;
         actionsConstraints.insets = new Insets(5, 5, 6, 6);
         actionsJPanel.setLayout(actionsLayout);
 
         actionsJPanel.add(chk_showPreview, actionsConstraints);
-        actionsConstraints.gridy++;
         actionsJPanel.add(btn_deleteRoi, actionsConstraints);
-        actionsConstraints.gridy++;
         actionsJPanel.add(btn_prevImage, actionsConstraints);
-        actionsConstraints.gridy++;
         actionsJPanel.add(btn_nextImage, actionsConstraints);
-        actionsConstraints.gridy++;
-        actionsJPanel.add(btn_alignImages, actionsConstraints);
-        actionsConstraints.gridy++;
-        actionsConstraints.gridy++;
-        actionsJPanel.add(new JLabel("<html><body><br>Press \"C\" to add a corner point</body> </html>"), actionsConstraints);
+        actionsJPanel.setLayout(actionsLayout);
 
-        // Buttons panel (including training and options)
+
+        // Options panel
+        alignJPanel.setBorder(BorderFactory.createTitledBorder("Alignment"));
+        GridBagLayout alignLayout = new GridBagLayout();
+        GridBagConstraints alignConstraints = new GridBagConstraints();
+        alignConstraints.anchor = GridBagConstraints.NORTHWEST;
+        alignConstraints.fill = GridBagConstraints.HORIZONTAL;
+        alignConstraints.weightx = 1;
+        alignConstraints.gridx = 0;
+        alignConstraints.insets = new Insets(5, 5, 6, 6);
+        alignJPanel.setLayout(alignLayout);
+
+        alignJPanel.add(chk_rotateImages, actionsConstraints);
+        alignJPanel.add(btn_alignImages, actionsConstraints);
+        alignJPanel.setLayout(alignLayout);
+
+        // Buttons panel
         GridBagLayout buttonsLayout = new GridBagLayout();
         GridBagConstraints buttonsConstraints = new GridBagConstraints();
         buttonsPanel.setLayout(buttonsLayout);
@@ -146,9 +153,11 @@ public class MainDialog extends ImageWindow {
         buttonsConstraints.gridheight = 1;
         buttonsConstraints.gridx = 0;
         buttonsConstraints.gridy = 0;
-        buttonsPanel.add(trainingJPanel, buttonsConstraints);
+        buttonsPanel.add(cornersJPanel, buttonsConstraints);
         buttonsConstraints.gridy++;
         buttonsPanel.add(actionsJPanel, buttonsConstraints);
+        buttonsConstraints.gridy++;
+        buttonsPanel.add(alignJPanel, buttonsConstraints);
         buttonsConstraints.gridy++;
         buttonsConstraints.insets = new Insets(5, 5, 6, 6);
 
@@ -176,7 +185,7 @@ public class MainDialog extends ImageWindow {
 
         GridBagLayout wingb = new GridBagLayout();
         GridBagConstraints winc = new GridBagConstraints();
-        winc.insets = new Insets(5, 0, 10, 0);
+        winc.insets = new Insets(5, 0, 0, 0);
         winc.anchor = GridBagConstraints.NORTHWEST;
         winc.fill = GridBagConstraints.BOTH;
         winc.weightx = 1;
@@ -204,7 +213,7 @@ public class MainDialog extends ImageWindow {
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-        btn_alignImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new AlignEvent()));
+        btn_alignImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new AlignEvent(chk_rotateImages.isSelected())));
 
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -351,7 +360,9 @@ public class MainDialog extends ImageWindow {
     }
 
     public void setAlignButtonEnabled(boolean enabled) {
+
         this.btn_alignImages.setEnabled(enabled);
+        this.chk_rotateImages.setEnabled(enabled);
     }
 
     public void setCopyCornersEnabled(boolean enabled) {

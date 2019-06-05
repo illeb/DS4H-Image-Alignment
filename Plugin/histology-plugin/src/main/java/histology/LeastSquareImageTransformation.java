@@ -19,11 +19,11 @@ public class LeastSquareImageTransformation {
     /**
      * Performs a least square transformation between two BufferedImages with a series of fixed parameters.
      */
-    public static ImagePlus transform(BufferedImage source, BufferedImage template) {
+    public static ImagePlus transform(BufferedImage source, BufferedImage template, boolean rotate) {
         Mapping<?> mapping;
         final MovingLeastSquaresTransform t = new MovingLeastSquaresTransform();
         try {
-            t.setModel( AffineModel2D.class );
+            t.setModel( rotate ? AffineModel2D.class : TranslationModel2D.class );
         } catch (Exception e) {
             e.printStackTrace();
         }

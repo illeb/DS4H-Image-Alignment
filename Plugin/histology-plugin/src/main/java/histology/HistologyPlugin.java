@@ -187,13 +187,16 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 		}
 
 		if(dialogEvent instanceof AlignEvent) {
+			AlignEvent event = (AlignEvent)dialogEvent;
 			this.loadingDialog.showDialog();
+
+			// Timeout is necessary to ensure that the loadingDialog is shwon
 			Utilities.setTimeout(() -> {
 				ArrayList<ImagePlus> images = new ArrayList<>();
 				BufferedImage sourceImg = manager.get(0, true);
 				images.add(sourceImg);
 				for(int i=1; i < manager.getNImages(); i++)
-					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg));
+					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
 				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
