@@ -1,4 +1,5 @@
-import histology.*;
+package histology;
+
 import histology.maindialog.MainDialog;
 import histology.aligndialog.AlignDialog;
 import histology.aligndialog.OnAlignDialogEventListener;
@@ -66,7 +67,7 @@ public class HistologyPlugin extends AbstractContextual implements Op, OnMainDia
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
 		ij.ui().showUI();
-		HistologyPlugin plugin = new HistologyPlugin();
+		histology.HistologyPlugin plugin = new histology.HistologyPlugin();
 		plugin.setContext(ij.getContext());
 		plugin.run();
 	}
