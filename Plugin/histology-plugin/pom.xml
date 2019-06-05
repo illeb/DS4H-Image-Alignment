@@ -14,7 +14,7 @@
 
 	<groupId>histology-plugin</groupId>
 	<artifactId>histology-plugin</artifactId>
-	<version>0.7.5</version>
+	<version>0.7.6</version>
 
 	<name>Histology-plugin for medical research</name>
 	<description>A simple imageJ plugin.</description>
