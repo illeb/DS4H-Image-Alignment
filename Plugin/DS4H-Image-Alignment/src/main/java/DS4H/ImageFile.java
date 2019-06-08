@@ -104,19 +104,7 @@ public class ImageFile {
         options.setSplitChannels(false);
         options.setSeriesOn(0, true);
         ImportProcess process = new ImportProcess(options);
-        ImageReader imageReader = LociPrefs.makeImageReader();
-        IFormatReader baseReader = imageReader.getReader(pathFile);
-        ServiceFactory factory = new ServiceFactory();
-        OMEXMLService service = factory.getInstance(OMEXMLService.class);
-        loci.formats.meta.MetadataStore meta = service.createOMEXMLMetadata();
 
-        baseReader.setMetadataStore(meta);
-
-        baseReader.setMetadataFiltered(true);
-        baseReader.setGroupFiles(false);
-        baseReader.getMetadataOptions().setMetadataLevel(
-                MetadataLevel.ALL);
-        baseReader.setId(pathFile);
         DisplayHandler displayHandler = new DisplayHandler(process);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
@@ -164,6 +152,10 @@ public class ImageFile {
         return process;
     }
 
+    /**
+     * Returns the maximum image size obtainable by the current ImageFile
+     * @return
+     */
     public Dimension getMaximumSize() {
         Dimension maximumSize = new Dimension();
         for (int i = 0; i < importProcess.getReader().getSeriesCount(); i++) {

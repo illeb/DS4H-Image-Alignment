@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
 import loci.formats.FormatException;
 
+import java.awt.*;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;

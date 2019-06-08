@@ -20,6 +20,8 @@ import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.ImagesToStack;
 import ij.plugin.frame.RoiManager;
+import ij.process.ColorProcessor;
+import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
@@ -177,7 +179,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.drawRois();
-			Dimension max = manager.getMaximumSize();
 		}
 
 		if(dialogEvent instanceof DeselectedRoiEvent) {
@@ -194,7 +195,12 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			// Timeout is necessary to ensure that the loadingDialog is shwon
 			Utilities.setTimeout(() -> {
 				ArrayList<ImagePlus> images = new ArrayList<>();
+				Dimension max = manager.getMaximumSize();
+
+				ColorProcessor ip2 = new ColorProcessor(max.width, max.height);
 				BufferedImage sourceImg = manager.get(0, true);
+				ip2.insert(sourceImg.getProcessor(), 0, 0);
+				sourceImg.setProcessor(ip2);
 				images.add(sourceImg);
 				for(int i=1; i < manager.getNImages(); i++)
 					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
