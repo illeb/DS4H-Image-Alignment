@@ -12,17 +12,17 @@
 		<relativePath />
 	</parent>
 
-	<groupId>imagej-tutorials</groupId>
-	<artifactId>load-and-display-dataset</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<groupId>DS4H-Image-Alignment</groupId>
+	<artifactId>DS4H-Image-Alignment</artifactId>
+	<version>1.0.0</version>
 
-	<name>Load and Display a Dataset</name>
-	<description>This example shows how to load and display a dataset using the ImageJ API.</description>
-	<url>https://github.com/[MY-ORG]/[MY-REPO]</url>
-	<inceptionYear>2012</inceptionYear>
+	<name>DS4H Image Alignment plugin</name>
+	<description>DS4H Image Alignment plugin for medical research</description>
+	<url>https://github.com/Luxor001/Imagej-plugin</url>
+	<inceptionYear>2019</inceptionYear>
 	<organization>
-		<name>[MY-ORGANIZATION-NAME]</name>
-		<url>[MY-ORGANIZATION-WEB-SITE]</url>
+		<name>Stefano Belli</name>
+		<url>https://github.com/Luxor001</url>
 	</organization>
 	<licenses>
 		<license>
@@ -34,8 +34,8 @@
 
 	<developers>
 		<developer>
-			<id>[MY-GITHUB-ID]</id>
-			<name>[MY-FULL-NAME]</name>
+			<id>https://github.com/Luxor001</id>
+			<name>Stefano Belli</name>
 			<url>https://imagej.net/User:[MY-IMAGEJ-WIKI-ACCOUNT]</url>
 		</developer>
 	</developers>
@@ -53,22 +53,22 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/[MY-ORG]/[MY-REPO]</connection>
+		<connection>scm:git:git://github.com/Luxor001/Imagej-plugin/</connection>
 		<developerConnection>scm:git:git@github.com:[MY-ORG]/[MY-REPO]</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/[MY-ORG]/[MY-REPO]</url>
+		<url>https://github.com/Luxor001/Imagej-plugin/</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>http://github.com/[MY-ORG]/[MY-REPO]/issues</url>
+		<url>http://github.com/Luxor001/Imagej-plugin//issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>
 	</ciManagement>
 
 	<properties>
-		<main-class>Main</main-class>
-		<license.licenseName>cc0</license.licenseName>
+		<main-class>DS4H.ImageAlignment</main-class>
+		<license.licenseName>GPL 3.0</license.licenseName>
 		<license.copyrightOwners>N/A</license.copyrightOwners>
 		<license.projectName>ImageJ software for multidimensional image processing and analysis.</license.projectName>
 	</properties>
@@ -85,31 +85,42 @@
 			<groupId>net.imagej</groupId>
 			<artifactId>imagej</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
 		<dependency>
-			<groupId>loci</groupId>
-			<artifactId>loci_plugins</artifactId>
-			<version>4.4.9</version>
+			<groupId>ome</groupId>
+			<artifactId>bio-formats_plugins</artifactId>
+			<version>6.1.0</version>
+			<exclusions>
+				<exclusion>
+					<!-- NB: Exclude problematic uber-JAR that bundles commons-io. -->
+					<groupId>ch.systems.cisd</groupId>
+					<artifactId>jhdf5</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.25</version>
+			<groupId>sc.fiji</groupId>
+			<artifactId>fiji-lib</artifactId>
+			<version>2.1.2</version>
 		</dependency>
+		<dependency>
+			<groupId>mpicbg</groupId>
+			<artifactId>mpicbg</artifactId>
+			<version>1.3.0</version>
+		</dependency>
+
+
 	</dependencies>
 
-	<build>
-		<plugins>
-			<!-- we need to overide the enforcer rules here because we have java 1.6 and not the  old 1.4 -->
-			<plugin>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>enforce-java-1_4</id>
-						<phase>none</phase>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/assets</directory>
+				<includes>
+					<include>**/*</include>
+				</includes>
+			</resource>
+		</resources>
+	</build>
 </project>
