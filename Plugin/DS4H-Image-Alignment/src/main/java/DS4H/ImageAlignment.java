@@ -177,6 +177,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.drawRois();
+			Dimension max = manager.getMaximumSize();
 		}
 
 		if(dialogEvent instanceof DeselectedRoiEvent) {

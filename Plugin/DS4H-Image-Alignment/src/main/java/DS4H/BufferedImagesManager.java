@@ -128,5 +128,15 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return  result;
     }
 
+    public Dimension getMaximumSize() {
+        Dimension maximumSize = new Dimension();
+        imageFiles.forEach(imageFile -> {
+            Dimension dimension = imageFile.getMaximumSize();
+            maximumSize.width = dimension.width > maximumSize.width ? dimension.width : maximumSize.width;
+            maximumSize.height = dimension.height > maximumSize.height ? dimension.height : maximumSize.height;
+        });
+        return maximumSize;
+    }
+
     public static class ImageOversizeException extends Exception { }
 }

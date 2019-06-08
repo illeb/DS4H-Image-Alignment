@@ -21,32 +21,27 @@ import loci.plugins.util.LociPrefs;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class ImageFile {
     private String pathFile;
-    private BufferedImageReader bufferedImageReader;
-    private Dimension editorImageDimension;
     private boolean reducedImageMode;
     private List<RoiManager> roiManagers;
 
+    private Dimension editorImageDimension;
+    private BufferedImageReader bufferedEditorImageReader;
+    private ImportProcess importProcess;
     public ImageFile(String pathFile) {
         this.pathFile = pathFile;
         this.roiManagers = new ArrayList<>();
     }
 
     public void generateImageReader() throws FormatException, IOException, BufferedImagesManager.ImageOversizeException {
+        this.importProcess = getImageImportingProcess(pathFile);
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
-        try {
-            ServiceFactory factory = new ServiceFactory();
-            OMEXMLService service = factory.getInstance(OMEXMLService.class);
-            service.createOMEXMLMetadata();
-        }
-        catch (Exception exc) {
-            throw new FormatException("Could not create OME-XML store.", exc);
-        }
         imageReader.setId(pathFile);
-
+        // final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
             /*if(imageReader.getSeriesCount() <= 1)
@@ -67,18 +62,18 @@ public class ImageFile {
         }
 
         this.editorImageDimension = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
-        this.bufferedImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
-        for(int i=0; i < bufferedImageReader.getImageCount(); i++)
+        this.bufferedEditorImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
+        for(int i=0; i < bufferedEditorImageReader.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
     }
 
     public int getNImages() {
-        return this.bufferedImageReader.getImageCount();
+        return this.bufferedEditorImageReader.getImageCount();
     }
 
     public BufferedImage getImage(int index, boolean wholeSlide) throws IOException, FormatException {
         if(!wholeSlide)
-            return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
+            return new BufferedImage("", bufferedEditorImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
             if(virtualStack == null) {
                 try {
@@ -94,12 +89,8 @@ public class ImageFile {
         }
     }
 
-    public String getPathFile() {
-        return pathFile;
-    }
-
     public void dispose() throws IOException {
-        bufferedImageReader.close();
+        bufferedEditorImageReader.close();
         roiManagers.forEach(Window::dispose);
     }
 
@@ -148,7 +139,7 @@ public class ImageFile {
         return this.roiManagers;
     }
 
-    public static long estimateMemoryUsage(String pathFile)throws IOException, FormatException, DependencyException, ServiceException {
+    public static long estimateMemoryUsage(String pathFile) throws IOException, FormatException {
         ImporterOptions options = new ImporterOptions();
         options.loadOptions();
         options.setVirtual(false);
@@ -159,11 +150,27 @@ public class ImageFile {
         process.execute();
         return process.getMemoryUsage() * 3;
     }
-    public Dimension getEditorImageDimension() {
-        return editorImageDimension;
+
+    private ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
+        ImporterOptions options = new ImporterOptions();
+        options.loadOptions();
+        options.setVirtual(false);
+        options.setId(pathFile);
+        options.setSplitChannels(false);
+        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
+        options.setSeriesOn(0, true);
+        ImportProcess process = new ImportProcess(options);
+        process.execute();
+        return process;
     }
 
-    public void setEditorImageDimension(Dimension editorImageDimension) {
-        this.editorImageDimension = editorImageDimension;
+    public Dimension getMaximumSize() {
+        Dimension maximumSize = new Dimension();
+        for (int i = 0; i < importProcess.getReader().getSeriesCount(); i++) {
+            importProcess.getReader().setSeries(i);
+            maximumSize.width = importProcess.getReader().getSizeX() > maximumSize.width ? importProcess.getReader().getSizeX() : maximumSize.width;
+            maximumSize.height = importProcess.getReader().getSizeY() > maximumSize.height ? importProcess.getReader().getSizeY() : maximumSize.height;
+        }
+        return maximumSize;
     }
 }
