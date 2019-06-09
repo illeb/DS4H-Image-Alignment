@@ -140,5 +140,8 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return maximumSize;
     }
 
+    public List<ImageFile> getImageFiles() {
+        return this.imageFiles;
+    }
     public static class ImageOversizeException extends Exception { }
 }

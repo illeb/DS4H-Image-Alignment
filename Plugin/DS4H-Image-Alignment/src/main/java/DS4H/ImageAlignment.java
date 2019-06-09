@@ -12,6 +12,7 @@ import DS4H.maindialog.OnMainDialogEventListener;
 import DS4H.maindialog.event.*;
 import DS4H.previewdialog.event.CloseDialogEvent;
 import DS4H.previewdialog.event.IPreviewDialogEvent;
+import DS4H.removedialog.RemoveImageDialog;
 import ij.*;
 import ij.gui.*;
 
@@ -53,6 +54,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	private AlignDialog alignDialog;
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
+	private RemoveImageDialog removeImageDialog;
 
 	private List<String> alignedImagePaths = new ArrayList<>();
 	private boolean alignedImageSaved = false;
@@ -195,12 +197,14 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			// Timeout is necessary to ensure that the loadingDialog is shwon
 			Utilities.setTimeout(() -> {
 				ArrayList<ImagePlus> images = new ArrayList<>();
-				Dimension max = manager.getMaximumSize();
-
-				ColorProcessor ip2 = new ColorProcessor(max.width, max.height);
 				BufferedImage sourceImg = manager.get(0, true);
-				ip2.insert(sourceImg.getProcessor(), 0, 0);
-				sourceImg.setProcessor(ip2);
+				Dimension max = manager.getMaximumSize();
+				// If the sourceImage is already the biggest image, we don't need to "enlarge" it
+				if(sourceImg.getWidth() != max.width || sourceImg.getHeight() != max.height) {
+					ColorProcessor ip2 = new ColorProcessor(max.width, max.height);
+					ip2.insert(sourceImg.getProcessor(), 0, 0);
+					sourceImg.setProcessor(ip2);
+				}
 				images.add(sourceImg);
 				for(int i=1; i < manager.getNImages(); i++)
 					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
@@ -209,7 +213,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				alignedImagePaths.add(filePath);
 				new FileSaver(stack).saveAsTiff(filePath);
 				this.loadingDialog.hideDialog();
-				JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
 				alignDialog = new AlignDialog(stack, this);
 				alignDialog.pack();
 				alignDialog.setVisible(true);
@@ -301,6 +304,11 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				if(roiPoints.stream().anyMatch(roiCoords-> roiCoords.x > image.getWidth() || roiCoords.y > image.getHeight()))
 					JOptionPane.showMessageDialog(null, ROI_NOT_ADDED_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 			}
+		}
+
+		if(dialogEvent instanceof RemoveImageEvent) {
+			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
+			this.removeImageDialog.setVisible(true);
 		}
 	}
 
@@ -466,6 +474,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			this.previewDialog.dispose();
 		if(this.alignDialog != null)
 			this.alignDialog.dispose();
+		if(this.removeImageDialog != null)
+			this.removeImageDialog.dispose();
 		this.manager.dispose();
 		IJ.freeMemory();
 		TotalMemory = 0;

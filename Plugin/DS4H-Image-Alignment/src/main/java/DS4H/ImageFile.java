@@ -19,6 +19,7 @@ import loci.plugins.in.ImporterOptions;
 import loci.plugins.util.LociPrefs;
 
 import java.awt.*;
+import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -164,6 +165,16 @@ public class ImageFile {
             maximumSize.height = importProcess.getReader().getSizeY() > maximumSize.height ? importProcess.getReader().getSizeY() : maximumSize.height;
         }
         return maximumSize;
+    }
+
+    public Raster getThumbs() {
+        try {
+            return this.bufferedEditorImageReader.openThumbImage(0).getData();
+        } catch (FormatException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String getPathFile() {
