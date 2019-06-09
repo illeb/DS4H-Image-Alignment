@@ -41,6 +41,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         BufferedImage image = null;
         try {
             image = imageFile.getImage(index - progressive,  wholeSlide);
+            image.setFilePath(imageFile.getPathFile());
             image.setTitle(MessageFormat.format("Editor Image {0}/{1}", index + 1, this.getNImages()));
         } catch (Exception e) {
             e.printStackTrace();

@@ -165,4 +165,8 @@ public class ImageFile {
         }
         return maximumSize;
     }
+
+    public String getPathFile() {
+        return pathFile;
+    }
 }

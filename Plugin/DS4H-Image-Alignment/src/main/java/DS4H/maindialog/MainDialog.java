@@ -285,6 +285,7 @@ public class MainDialog extends ImageWindow {
         menuItem = new MenuItem("Add image to current stack");
         menuItem.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
+            chooser.setCurrentDirectory(new File(image.getFilePath()));
             chooser.setMultiSelectionEnabled(true);
             chooser.showOpenDialog(null);
 
@@ -305,6 +306,7 @@ public class MainDialog extends ImageWindow {
         menuBar.add(fileMenu);
         menuBar.add(aboutMenu);
         this.setMenuBar(menuBar);
+        new Zoom().run("scale");
         pack();
     }
 

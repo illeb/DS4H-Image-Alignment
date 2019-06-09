@@ -13,6 +13,7 @@ public class BufferedImage extends ImagePlus {
     private Roi[] roisBackup;
     private boolean isReduced;
     private Dimension reduceImageDimensions;
+    private String filePath;
     public BufferedImage(String text, Image image, RoiManager manager, boolean isReduced) {
         super(text, image);
         this.manager = manager;
@@ -44,5 +45,13 @@ public class BufferedImage extends ImagePlus {
 
     public Dimension getEditorImageDimension() {
         return reduceImageDimensions;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }
