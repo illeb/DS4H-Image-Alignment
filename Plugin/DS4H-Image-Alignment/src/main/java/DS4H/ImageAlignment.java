@@ -24,6 +24,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
+import loci.plugins.in.ImagePlusReader;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -200,22 +201,56 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				BufferedImage sourceImg = manager.get(0, true);
 				Dimension max = manager.getMaximumSize();
 				// If the sourceImage is already the biggest image, we don't need to "enlarge" it
-				if(sourceImg.getWidth() != max.width || sourceImg.getHeight() != max.height) {
+				/*if(sourceImg.getWidth() != max.width || sourceImg.getHeight() != max.height) {
 					ColorProcessor ip2 = new ColorProcessor(max.width, max.height);
-					ip2.insert(sourceImg.getProcessor(), 0, 0);
+
+					int differenceX = max.width - sourceImg.getWidth();
+					ip2.insert(sourceImg.getProcessor(), differenceX / 2, 0);
 					sourceImg.setProcessor(ip2);
-				}
+				}*/
 				images.add(sourceImg);
 				for(int i=1; i < manager.getNImages(); i++)
 					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
-				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+
+
+				ImageProcessor newProcessor = manager.get(1, true).getProcessor().createProcessor(max.width, max.height);
+				newProcessor.insert(manager.get(1, true).getProcessor(), 0, 0);
+				ImageProcessor transformedImage = images.get(1).getProcessor();
+				BufferedImage originalImage = manager.get(1, true);
+				final int[] edgeX = {-1};
+				final int[] edgeY = {-1};
+				Arrays.stream(originalImage.getManager().getRoisAsArray()).forEach(roi -> {
+					if(edgeX[0] == -1 || edgeX[0] > roi.getXBase())
+						edgeX[0] = (int) roi.getXBase();
+					if(edgeY[0] == -1 || edgeY[0] > roi.getYBase())
+						edgeY[0] = (int) roi.getYBase();
+				});
+
+
+				final int[] edgeX2 = {-1};
+				final int[] edgeY2 = {-1};
+				Arrays.stream(manager.get(0, true).getManager().getRoisAsArray()).forEach(roi -> {
+					if(edgeX2[0] == -1 || edgeX2[0] > roi.getXBase())
+						edgeX2[0] = (int) roi.getXBase();
+					if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
+						edgeY2[0] = (int) roi.getYBase();
+				});
+				newProcessor.insert(manager.get(1, true).getProcessor(), 0, Math.abs(edgeY[0] - edgeY2[0]));
+				newProcessor.insert(transformedImage, edgeX[0] - edgeX2[0], 0);
+				ImagePlus asdsad = new ImagePlus("", newProcessor);
+				asdsad.show();
+				/*ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
 				new FileSaver(stack).saveAsTiff(filePath);
 				this.loadingDialog.hideDialog();
 				alignDialog = new AlignDialog(stack, this);
 				alignDialog.pack();
-				alignDialog.setVisible(true);
+				alignDialog.setVisible(true);*/
+				this.loadingDialog.hideDialog();
+				for (ImagePlus imagePlus : images) {
+					imagePlus.show();
+				}
 			}, 10);
 		}
 

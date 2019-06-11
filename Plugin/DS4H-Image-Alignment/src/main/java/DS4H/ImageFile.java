@@ -168,13 +168,15 @@ public class ImageFile {
     }
 
     public Raster getThumbs() {
+        Raster image = null;
         try {
-            return this.bufferedEditorImageReader.openThumbImage(0).getData();
+            image= this.bufferedEditorImageReader.openThumbImage(0).getData();
         } catch (FormatException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return image;
     }
 
     public String getPathFile() {
