@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -199,20 +200,40 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			Utilities.setTimeout(() -> {
 				ArrayList<ImagePlus> transformedImages = new ArrayList<>();
 				BufferedImage sourceImg = manager.get(0, true);
-				Dimension max = manager.getMaximumSize();
-				// If the sourceImage is already the biggest image, we don't need to "enlarge" it
-				/*if(sourceImg.getWidth() != max.width || sourceImg.getHeight() != max.height) {
-					ColorProcessor ip2 = new ColorProcessor(max.width, max.height);
 
-					int differenceX = max.width - sourceImg.getWidth();
-					ip2.insert(sourceImg.getProcessor(), differenceX / 2, 0);
-					sourceImg.setProcessor(ip2);
-				}*/
+
+
+
+
+
+                Dimension max = manager.getMaximumSize();
+                Dimension finalStackDimension = new Dimension(max.width, max.height);
+                BufferedImage maximumHorizontalImage = getMaximumHorizontalImage(manager);
+                double maximumX = -1;
+                List<Integer> scostamenti = new ArrayList<>();
+                for(int i=1; i < manager.getNImages(); i++) {
+                    Roi roi2 = manager.get(i, true).getManager().getRoisAsArray()[0];
+                    scostamenti.add((int)(roi2.getXBase() - maximumHorizontalImage.getManager().getRoisAsArray()[0].getXBase()));
+                }
+                int scostamentoMax = (int) (scostamenti.stream().max(Comparator.naturalOrder()).get());
+                finalStackDimension.width = finalStackDimension.width + scostamentoMax;
+
+
+
+
+                ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
+                processor.insert(sourceImg.getProcessor(), scostamentoMax, 0);
+                sourceImg.setProcessor(processor);
 				transformedImages.add(sourceImg);
+
+                ArrayList<ImagePlus> sss = new ArrayList<>();
+                sss.add(sourceImg);
 				for(int i=1; i < manager.getNImages(); i++){
-					ImageProcessor newProcessor = new ColorProcessor(max.width, max.height);
-					ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
+					ImageProcessor newProcessor = new ColorProcessor(finalStackDimension.width, max.height);
+					ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), manager.get(0, true), event.isRotate());
 					transformedImages.add(transformedImage);
+
+
 					BufferedImage transformedOriginalImage = manager.get(i, true);
 					final int[] edgeX = {-1};
 					final int[] edgeY = {-1};
@@ -231,13 +252,16 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
 							edgeY2[0] = (int) roi.getYBase();
 					});
-					newProcessor.insert(transformedOriginalImage.getProcessor(), 0, Math.abs(edgeY[0] - edgeY2[0]));
-					newProcessor.insert(transformedImage.getProcessor(), edgeX[0] - edgeX2[0], 0);
+
+                    int scostamentoBaseLine = i != 1 ? scostamentoMax : 0;
+					newProcessor.insert(transformedOriginalImage.getProcessor(), (scostamenti.get(i - 1) < 0 ? Math.abs(scostamenti.get(i - 1)) : 0)+ scostamentoBaseLine, edgeY2[0] - edgeY[0]);
+					newProcessor.insert(transformedImage.getProcessor(), (scostamenti.get(i - 1) > 0 ? scostamenti.get(i - 1) : 0)+ scostamentoBaseLine, 0);
 					ImagePlus asdsad = new ImagePlus("", newProcessor);
 					asdsad.show();
+                    sss.add(asdsad);
 				}
-
-
+                ImagesToStack.run(sss.toArray(new ImagePlus[sss.size()])).show();
+/*
 				ImageProcessor newProcessor = new ColorProcessor(max.width, max.height);
 				final int[] edgeX = {-1};
 				final int[] edgeY = {-1};
@@ -259,7 +283,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				newProcessor.insert(sourceImg.getProcessor(), edgeX[0] - edgeX2[0], Math.abs(edgeY[0] - edgeY2[0]));
 				ImagePlus asdsad = new ImagePlus("", newProcessor);
 				asdsad.show();
-
+*/
 				/*ImagePlus stack = ImagesToStack.run(transformedImages.toArray(new ImagePlus[transformedImages.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
@@ -269,9 +293,10 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				alignDialog.pack();
 				alignDialog.setVisible(true);*/
 				this.loadingDialog.hideDialog();
+			/*	this.loadingDialog.hideDialog();
 				for (ImagePlus imagePlus : transformedImages) {
 					imagePlus.show();
-				}
+				}*/
 			}, 10);
 		}
 
@@ -368,7 +393,11 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 	}
 
-	@Override
+	private BufferedImage getMaximumHorizontalImage(BufferedImagesManager manager) {
+	    return manager.get(0, true);
+    }
+
+    @Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
 			DS4H.previewdialog.event.ChangeImageEvent event = (DS4H.previewdialog.event.ChangeImageEvent)dialogEvent;
