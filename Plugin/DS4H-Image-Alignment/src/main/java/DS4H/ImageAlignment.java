@@ -216,6 +216,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
                     scostamenti.add((int)(roi2.getXBase() - maximumHorizontalImage.getManager().getRoisAsArray()[0].getXBase()));
                 }
                 int scostamentoMax = (int) (scostamenti.stream().max(Comparator.naturalOrder()).get());
+                if(scostamentoMax < 0)
+                    scostamentoMax = 0;
                 finalStackDimension.width = finalStackDimension.width + scostamentoMax;
 
 
@@ -255,7 +257,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
                     int scostamentoBaseLine = i != 1 ? scostamentoMax : 0;
 					newProcessor.insert(transformedOriginalImage.getProcessor(), (scostamenti.get(i - 1) < 0 ? Math.abs(scostamenti.get(i - 1)) : 0)+ scostamentoBaseLine, edgeY2[0] - edgeY[0]);
-					newProcessor.insert(transformedImage.getProcessor(), (scostamenti.get(i - 1) > 0 ? scostamenti.get(i - 1) : 0)+ scostamentoBaseLine, 0);
+    					newProcessor.insert(transformedImage.getProcessor(), (scostamenti.get(i - 1) > 0 ? scostamenti.get(i - 1) : 0)+ scostamentoBaseLine, 0);
 					ImagePlus asdsad = new ImagePlus("", newProcessor);
 					asdsad.show();
                     sss.add(asdsad);
