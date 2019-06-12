@@ -197,7 +197,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 			// Timeout is necessary to ensure that the loadingDialog is shwon
 			Utilities.setTimeout(() -> {
-				ArrayList<ImagePlus> images = new ArrayList<>();
+				ArrayList<ImagePlus> transformedImages = new ArrayList<>();
 				BufferedImage sourceImg = manager.get(0, true);
 				Dimension max = manager.getMaximumSize();
 				// If the sourceImage is already the biggest image, we don't need to "enlarge" it
@@ -208,38 +208,59 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					ip2.insert(sourceImg.getProcessor(), differenceX / 2, 0);
 					sourceImg.setProcessor(ip2);
 				}*/
-				images.add(sourceImg);
-				for(int i=1; i < manager.getNImages(); i++)
-					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
+				transformedImages.add(sourceImg);
+				for(int i=1; i < manager.getNImages(); i++){
+					ImageProcessor newProcessor = new ColorProcessor(max.width, max.height);
+					ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
+					transformedImages.add(transformedImage);
+					BufferedImage transformedOriginalImage = manager.get(i, true);
+					final int[] edgeX = {-1};
+					final int[] edgeY = {-1};
+					Arrays.stream(transformedOriginalImage.getManager().getRoisAsArray()).forEach(roi -> {
+						if(edgeX[0] == -1 || edgeX[0] > roi.getXBase())
+							edgeX[0] = (int) roi.getXBase();
+						if(edgeY[0] == -1 || edgeY[0] > roi.getYBase())
+							edgeY[0] = (int) roi.getYBase();
+					});
+
+					final int[] edgeX2 = {-1};
+					final int[] edgeY2 = {-1};
+					Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
+						if(edgeX2[0] == -1 || edgeX2[0] > roi.getXBase())
+							edgeX2[0] = (int) roi.getXBase();
+						if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
+							edgeY2[0] = (int) roi.getYBase();
+					});
+					newProcessor.insert(transformedOriginalImage.getProcessor(), 0, Math.abs(edgeY[0] - edgeY2[0]));
+					newProcessor.insert(transformedImage.getProcessor(), edgeX[0] - edgeX2[0], 0);
+					ImagePlus asdsad = new ImagePlus("", newProcessor);
+					asdsad.show();
+				}
 
 
-				ImageProcessor newProcessor = manager.get(1, true).getProcessor().createProcessor(max.width, max.height);
-				newProcessor.insert(manager.get(1, true).getProcessor(), 0, 0);
-				ImageProcessor transformedImage = images.get(1).getProcessor();
-				BufferedImage originalImage = manager.get(1, true);
+				ImageProcessor newProcessor = new ColorProcessor(max.width, max.height);
 				final int[] edgeX = {-1};
 				final int[] edgeY = {-1};
-				Arrays.stream(originalImage.getManager().getRoisAsArray()).forEach(roi -> {
+				Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
 					if(edgeX[0] == -1 || edgeX[0] > roi.getXBase())
 						edgeX[0] = (int) roi.getXBase();
 					if(edgeY[0] == -1 || edgeY[0] > roi.getYBase())
 						edgeY[0] = (int) roi.getYBase();
 				});
 
-
 				final int[] edgeX2 = {-1};
 				final int[] edgeY2 = {-1};
-				Arrays.stream(manager.get(0, true).getManager().getRoisAsArray()).forEach(roi -> {
+				Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
 					if(edgeX2[0] == -1 || edgeX2[0] > roi.getXBase())
 						edgeX2[0] = (int) roi.getXBase();
 					if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
 						edgeY2[0] = (int) roi.getYBase();
 				});
-				newProcessor.insert(manager.get(1, true).getProcessor(), 0, Math.abs(edgeY[0] - edgeY2[0]));
-				newProcessor.insert(transformedImage, edgeX[0] - edgeX2[0], 0);
+				newProcessor.insert(sourceImg.getProcessor(), edgeX[0] - edgeX2[0], Math.abs(edgeY[0] - edgeY2[0]));
 				ImagePlus asdsad = new ImagePlus("", newProcessor);
 				asdsad.show();
-				/*ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+
+				/*ImagePlus stack = ImagesToStack.run(transformedImages.toArray(new ImagePlus[transformedImages.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
 				new FileSaver(stack).saveAsTiff(filePath);
@@ -248,7 +269,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				alignDialog.pack();
 				alignDialog.setVisible(true);*/
 				this.loadingDialog.hideDialog();
-				for (ImagePlus imagePlus : images) {
+				for (ImagePlus imagePlus : transformedImages) {
 					imagePlus.show();
 				}
 			}, 10);
