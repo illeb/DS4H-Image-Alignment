@@ -39,11 +39,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -196,45 +195,59 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			AlignEvent event = (AlignEvent)dialogEvent;
 			this.loadingDialog.showDialog();
 
-			// Timeout is necessary to ensure that the loadingDialog is shwon
+			// Timeout is necessary to ensure that the loadingDialog is shown
 			Utilities.setTimeout(() -> {
-				ArrayList<ImagePlus> transformedImages = new ArrayList<>();
-				BufferedImage sourceImg = manager.get(0, true);
 
+				// MAX IMAGE SIZE SEARCH AND SOURCE IMG SELECTION
+				// search for the maximum size of the images and the index of the image with the maximum width
+				List<Dimension> dimensions = manager.getImagesDimensions();
+				int sourceImgIndex = -1;
+				Dimension maximumSize = new Dimension();
+				for(int i =0 ; i < dimensions.size() ; i++) {
 
+					Dimension dimension = dimensions.get(i);
+					if(dimension.width > maximumSize.width) {
+						maximumSize.width = dimension.width;
+						sourceImgIndex = i;
+					}
+					if(dimension.height > maximumSize.height)
+						maximumSize.height = dimension.height;
+				}
+				BufferedImage sourceImg = manager.get(sourceImgIndex, true);
 
-
-
-
-                Dimension max = manager.getMaximumSize();
-                Dimension finalStackDimension = new Dimension(max.width, max.height);
-                BufferedImage maximumHorizontalImage = getMaximumHorizontalImage(manager);
-                double maximumX = -1;
-                List<Integer> scostamenti = new ArrayList<>();
-                for(int i=1; i < manager.getNImages(); i++) {
-                    Roi roi2 = manager.get(i, true).getManager().getRoisAsArray()[0];
-                    scostamenti.add((int)(roi2.getXBase() - maximumHorizontalImage.getManager().getRoisAsArray()[0].getXBase()));
+				// FINAL STACK SIZE CALCULATION AND OFFSETS
+                Dimension finalStackDimension = new Dimension(maximumSize.width, maximumSize.height);
+                List<Integer> offsets = new ArrayList<>();
+                List<RoiManager> managers = manager.getRoiManagers();
+                for(int i=0; i < managers.size(); i++) {
+                	if(i == sourceImgIndex){
+                		offsets.add(0);
+                		continue;
+					}
+                    Roi roi = managers.get(i).getRoisAsArray()[0];
+                    offsets.add((int)(roi.getXBase() - sourceImg.getManager().getRoisAsArray()[0].getXBase()));
                 }
-                int scostamentoMax = (int) (scostamenti.stream().max(Comparator.naturalOrder()).get());
-                if(scostamentoMax < 0)
-                    scostamentoMax = 0;
-                finalStackDimension.width = finalStackDimension.width + scostamentoMax;
-
-
+                int maxOffsetX = (offsets.stream().max(Comparator.naturalOrder()).get());
+                int maxOffsetXIndex = offsets.indexOf(maxOffsetX);
+                if(maxOffsetX < 0) {
+					maxOffsetX = 0;
+					maxOffsetXIndex = -1;
+				}
+				// Calculate the final stack size. It is calculated as maximumImageSize + maximum offset in respect of the source image
+                // TODO: add height calculation
+                finalStackDimension.width = finalStackDimension.width + maxOffsetX;
 
 
                 ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
-                processor.insert(sourceImg.getProcessor(), scostamentoMax, 0);
-                sourceImg.setProcessor(processor);
-				transformedImages.add(sourceImg);
-
-                ArrayList<ImagePlus> sss = new ArrayList<>();
-                sss.add(sourceImg);
-				for(int i=1; i < manager.getNImages(); i++){
-					ImageProcessor newProcessor = new ColorProcessor(finalStackDimension.width, max.height);
-					ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), manager.get(0, true), event.isRotate());
-					transformedImages.add(transformedImage);
-
+                processor.insert(sourceImg.getProcessor(), maxOffsetX, 0);
+				// TODO: replace this arraylist with a virtualStack!
+                ArrayList<ImagePlus> images = new ArrayList<>();
+                images.add(new ImagePlus("", processor));
+				for(int i=0; i < manager.getNImages() ; i++) {
+					if(i == sourceImgIndex)
+						continue;
+					ImageProcessor newProcessor = new ColorProcessor(finalStackDimension.width, maximumSize.height);
+					ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
 
 					BufferedImage transformedOriginalImage = manager.get(i, true);
 					final int[] edgeX = {-1};
@@ -254,51 +267,31 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
 							edgeY2[0] = (int) roi.getYBase();
 					});
+                    int baseLineOffset = maxOffsetX;
 
-                    int scostamentoBaseLine = i != 1 ? scostamentoMax : 0;
-					newProcessor.insert(transformedOriginalImage.getProcessor(), (scostamenti.get(i - 1) < 0 ? Math.abs(scostamenti.get(i - 1)) : 0)+ scostamentoBaseLine, edgeY2[0] - edgeY[0]);
-    					newProcessor.insert(transformedImage.getProcessor(), (scostamenti.get(i - 1) > 0 ? scostamenti.get(i - 1) : 0)+ scostamentoBaseLine, 0);
-					ImagePlus asdsad = new ImagePlus("", newProcessor);
-					asdsad.show();
-                    sss.add(asdsad);
+                    int offsetOriginal = 0;
+                    if(offsets.get(i) < 0)
+                    	offsetOriginal = Math.abs(offsets.get(i));
+                    offsetOriginal += maxOffsetXIndex != i ? baseLineOffset : 0;
+
+					int offsetTransformed = 0;
+					if(offsets.get(i) > 0 && maxOffsetXIndex != i)
+						offsetTransformed = Math.abs(offsets.get(i));
+					offsetTransformed += baseLineOffset;
+
+					newProcessor.insert(transformedOriginalImage.getProcessor(), offsetOriginal, edgeY2[0] - edgeY[0]);
+					newProcessor.insert(transformedImage.getProcessor(), offsetTransformed, 0);
+                    images.add(new ImagePlus("", newProcessor));
 				}
-                ImagesToStack.run(sss.toArray(new ImagePlus[sss.size()])).show();
-/*
-				ImageProcessor newProcessor = new ColorProcessor(max.width, max.height);
-				final int[] edgeX = {-1};
-				final int[] edgeY = {-1};
-				Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
-					if(edgeX[0] == -1 || edgeX[0] > roi.getXBase())
-						edgeX[0] = (int) roi.getXBase();
-					if(edgeY[0] == -1 || edgeY[0] > roi.getYBase())
-						edgeY[0] = (int) roi.getYBase();
-				});
-
-				final int[] edgeX2 = {-1};
-				final int[] edgeY2 = {-1};
-				Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
-					if(edgeX2[0] == -1 || edgeX2[0] > roi.getXBase())
-						edgeX2[0] = (int) roi.getXBase();
-					if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
-						edgeY2[0] = (int) roi.getYBase();
-				});
-				newProcessor.insert(sourceImg.getProcessor(), edgeX[0] - edgeX2[0], Math.abs(edgeY[0] - edgeY2[0]));
-				ImagePlus asdsad = new ImagePlus("", newProcessor);
-				asdsad.show();
-*/
-				/*ImagePlus stack = ImagesToStack.run(transformedImages.toArray(new ImagePlus[transformedImages.size()]));
+				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
 				new FileSaver(stack).saveAsTiff(filePath);
 				this.loadingDialog.hideDialog();
 				alignDialog = new AlignDialog(stack, this);
 				alignDialog.pack();
-				alignDialog.setVisible(true);*/
+				alignDialog.setVisible(true);
 				this.loadingDialog.hideDialog();
-			/*	this.loadingDialog.hideDialog();
-				for (ImagePlus imagePlus : transformedImages) {
-					imagePlus.show();
-				}*/
 			}, 10);
 		}
 
@@ -395,10 +388,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 	}
 
-	private BufferedImage getMaximumHorizontalImage(BufferedImagesManager manager) {
-	    return manager.get(0, true);
-    }
-
     @Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
@@ -480,6 +469,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	public void initialize(String pathFile) {
 
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+			this.loadingDialog.hideDialog();
 			if(e instanceof  OutOfMemoryError){
 				this.loadingDialog.hideDialog();
 				JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
@@ -535,8 +525,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			e.printStackTrace();
 		}
 		finally {
+			this.loadingDialog.hideDialog();
 			if(!complete) {
-				this.loadingDialog.hideDialog();
 				this.run();
 			}
 
