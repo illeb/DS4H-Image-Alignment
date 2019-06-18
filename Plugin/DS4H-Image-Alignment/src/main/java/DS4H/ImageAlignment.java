@@ -216,33 +216,43 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				BufferedImage sourceImg = manager.get(sourceImgIndex, true);
 
 				// FINAL STACK SIZE CALCULATION AND OFFSETS
-                Dimension finalStackDimension = new Dimension(maximumSize.width, maximumSize.height);
-                List<Integer> offsets = new ArrayList<>();
-                List<RoiManager> managers = manager.getRoiManagers();
-                for(int i=0; i < managers.size(); i++) {
-                	if(i == sourceImgIndex){
-                		offsets.add(0);
-                		continue;
+				Dimension finalStackDimension = new Dimension(maximumSize.width, maximumSize.height);
+				List<Integer> offsetsX = new ArrayList<>();
+				List<Integer> offsetsY = new ArrayList<>();
+				List<RoiManager> managers = manager.getRoiManagers();
+				for(int i=0; i < managers.size(); i++) {
+					if(i == sourceImgIndex){
+						offsetsX.add(0);
+						offsetsY.add(0);
+						continue;
 					}
-                    Roi roi = managers.get(i).getRoisAsArray()[0];
-                    offsets.add((int)(roi.getXBase() - sourceImg.getManager().getRoisAsArray()[0].getXBase()));
-                }
-                int maxOffsetX = (offsets.stream().max(Comparator.naturalOrder()).get());
-                int maxOffsetXIndex = offsets.indexOf(maxOffsetX);
-                if(maxOffsetX < 0) {
+					Roi roi = managers.get(i).getRoisAsArray()[0];
+					offsetsX.add((int)(roi.getXBase() - sourceImg.getManager().getRoisAsArray()[0].getXBase()));
+					offsetsY.add((int)(roi.getYBase() - sourceImg.getManager().getRoisAsArray()[0].getYBase()));
+				}
+				int maxOffsetX = (offsetsX.stream().max(Comparator.naturalOrder()).get());
+				int maxOffsetXIndex = offsetsX.indexOf(maxOffsetX);
+				if(maxOffsetX <= 0) {
 					maxOffsetX = 0;
 					maxOffsetXIndex = -1;
 				}
+
+				int maxOffsetY = (offsetsY.stream().max(Comparator.naturalOrder()).get());
+				int maxOffsetYIndex = offsetsY.indexOf(maxOffsetY);
+				if(maxOffsetY <= 0) {
+					maxOffsetY = 0;
+				}
 				// Calculate the final stack size. It is calculated as maximumImageSize + maximum offset in respect of the source image
-                // TODO: add height calculation
-                finalStackDimension.width = finalStackDimension.width + maxOffsetX;
+				// TODO: add height calculation
+				finalStackDimension.width = finalStackDimension.width + maxOffsetX;
+				//finalStackDimension.height = finalStackDimension.height + maxOffsetY;
 
 
-                ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
-                processor.insert(sourceImg.getProcessor(), maxOffsetX, 0);
+				ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
+				processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
 				// TODO: replace this arraylist with a virtualStack!
-                ArrayList<ImagePlus> images = new ArrayList<>();
-                images.add(new ImagePlus("", processor));
+				ArrayList<ImagePlus> images = new ArrayList<>();
+				images.add(new ImagePlus("", processor));
 				for(int i=0; i < manager.getNImages() ; i++) {
 					if(i == sourceImgIndex)
 						continue;
@@ -267,22 +277,33 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
 							edgeY2[0] = (int) roi.getYBase();
 					});
-                    int baseLineOffset = maxOffsetX;
 
-                    int offsetOriginal = 0;
-                    if(offsets.get(i) < 0)
-                    	offsetOriginal = Math.abs(offsets.get(i));
-                    offsetOriginal += maxOffsetXIndex != i ? baseLineOffset : 0;
+					int offsetXOriginal = 0;
+					if(offsetsX.get(i) < 0)
+						offsetXOriginal = Math.abs(offsetsX.get(i));
+					offsetXOriginal += maxOffsetXIndex != i ? maxOffsetX : 0;
 
-					int offsetTransformed = 0;
-					if(offsets.get(i) > 0 && maxOffsetXIndex != i)
-						offsetTransformed = Math.abs(offsets.get(i));
-					offsetTransformed += baseLineOffset;
+					int offsetXTransformed = 0;
+					if(offsetsX.get(i) > 0 && maxOffsetXIndex != i)
+						offsetXTransformed = Math.abs(offsetsX.get(i));
+					offsetXTransformed += maxOffsetX;
 
-					newProcessor.insert(transformedOriginalImage.getProcessor(), offsetOriginal, edgeY2[0] - edgeY[0]);
-					newProcessor.insert(transformedImage.getProcessor(), offsetTransformed, 0);
-                    images.add(new ImagePlus("", newProcessor));
+					int offsetYOriginal = 0;
+					if(offsetsY.get(i) < 0)
+						offsetYOriginal = Math.abs(offsetsY.get(i));
+					offsetYOriginal += maxOffsetYIndex != i ? maxOffsetY : 0;
+
+					int offsetYTransformed = 0;
+					if(offsetsY.get(i) > 0 && maxOffsetYIndex != i)
+						offsetYTransformed = Math.abs(offsetsY.get(i));
+					offsetYTransformed += maxOffsetY;
+
+					int difference = (int)(managers.get(maxOffsetYIndex).getRoisAsArray()[0].getYBase() - managers.get(i).getRoisAsArray()[0].getYBase());
+					newProcessor.insert(transformedOriginalImage.getProcessor(), offsetXOriginal, difference);
+					newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (int)(maxOffsetY - managers.get(sourceImgIndex).getRoisAsArray()[0].getYBase()));
+					images.add(new ImagePlus("", newProcessor));
 				}
+
 				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
@@ -291,7 +312,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				alignDialog = new AlignDialog(stack, this);
 				alignDialog.pack();
 				alignDialog.setVisible(true);
-				this.loadingDialog.hideDialog();
 			}, 10);
 		}
 
@@ -388,7 +408,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 	}
 
-    @Override
+	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
 			DS4H.previewdialog.event.ChangeImageEvent event = (DS4H.previewdialog.event.ChangeImageEvent)dialogEvent;
@@ -411,17 +431,17 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	public void onAlignDialogEventListener(IAlignDialogEvent dialogEvent) {
 
 		if(dialogEvent instanceof SaveEvent) {
-            SaveDialog saveDialog = new SaveDialog("Save as", "aligned", ".tiff");
-            if (saveDialog.getFileName()==null) {
-                loadingDialog.hideDialog();
-                return;
-            }
-            String path = saveDialog.getDirectory()+saveDialog.getFileName();
-            loadingDialog.showDialog();
-            new FileSaver(alignDialog.getImagePlus()).saveAsTiff(path);
-            loadingDialog.hideDialog();
-            JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
-            this.alignedImageSaved = true;
+			SaveDialog saveDialog = new SaveDialog("Save as", "aligned", ".tiff");
+			if (saveDialog.getFileName()==null) {
+				loadingDialog.hideDialog();
+				return;
+			}
+			String path = saveDialog.getDirectory()+saveDialog.getFileName();
+			loadingDialog.showDialog();
+			new FileSaver(alignDialog.getImagePlus()).saveAsTiff(path);
+			loadingDialog.hideDialog();
+			JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
+			this.alignedImageSaved = true;
 		}
 
 		if(dialogEvent instanceof ReuseImageEvent) {
