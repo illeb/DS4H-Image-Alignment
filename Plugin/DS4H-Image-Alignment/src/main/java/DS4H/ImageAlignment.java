@@ -25,6 +25,7 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
 import loci.plugins.in.ImagePlusReader;
+import net.imagej.notebook.Images;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -247,7 +248,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				finalStackDimension.width = finalStackDimension.width + maxOffsetX;
 				finalStackDimension.height += sourceImg.getHeight() == maximumSize.height ? maxOffsetY : 0;
 
-
 				ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
 				processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
 				// TODO: replace this arraylist with a virtualStack!
@@ -303,9 +303,9 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (int)(maxOffsetY));
 					images.add(new ImagePlus("", newProcessor));
 				}
-
-				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-				String filePath = IJ.getDir("temp") + stack.hashCode();
+				
+				ImagePlus stack = LeastSquareImageTransformation.convertToStack(images.toArray(new ImagePlus[images.size()]), images.size(), finalStackDimension.width, finalStackDimension.height);
+		    	String filePath = IJ.getDir("temp") + stack.hashCode();
 				alignedImagePaths.add(filePath);
 				new FileSaver(stack).saveAsTiff(filePath);
 				this.loadingDialog.hideDialog();
