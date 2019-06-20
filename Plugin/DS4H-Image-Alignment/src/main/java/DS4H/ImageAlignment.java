@@ -245,7 +245,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				// Calculate the final stack size. It is calculated as maximumImageSize + maximum offset in respect of the source image
 				// TODO: add height calculation
 				finalStackDimension.width = finalStackDimension.width + maxOffsetX;
-				//finalStackDimension.height = finalStackDimension.height + maxOffsetY;
+				finalStackDimension.height += sourceImg.getHeight() == maximumSize.height ? maxOffsetY : 0;
 
 
 				ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
@@ -300,7 +300,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 					int difference = (int)(managers.get(maxOffsetYIndex).getRoisAsArray()[0].getYBase() - managers.get(i).getRoisAsArray()[0].getYBase());
 					newProcessor.insert(transformedOriginalImage.getProcessor(), offsetXOriginal, difference);
-					newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (int)(maxOffsetY - managers.get(sourceImgIndex).getRoisAsArray()[0].getYBase()));
+					newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (int)(maxOffsetY));
 					images.add(new ImagePlus("", newProcessor));
 				}
 
