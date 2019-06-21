@@ -36,6 +36,7 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.ColorModel;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -252,7 +253,12 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
 					// TODO: replace this arraylist with a virtualStack!
 					ArrayList<ImagePlus> images = new ArrayList<>();
-					images.add(new ImagePlus("", processor));
+					VirtualStack virtualStack = new VirtualStack(finalStackDimension.width, finalStackDimension.height, ColorModel.getRGBdefault(), IJ.getDir("temp"));
+					String path = IJ.getDir("temp") + processor.hashCode()  + ".tiff";
+					new FileSaver(new ImagePlus("", processor)).saveAsTiff(path);
+					virtualStack.addSlice(processor.hashCode()+".tiff");
+
+					// images.add(new ImagePlus("", processor));
 					for(int i=0; i < manager.getNImages() ; i++) {
 						if(i == sourceImgIndex)
 							continue;
@@ -290,11 +296,15 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 						int difference = (int)(managers.get(maxOffsetYIndex).getRoisAsArray()[0].getYBase() - managers.get(i).getRoisAsArray()[0].getYBase());
 						newProcessor.insert(transformedOriginalImage.getProcessor(), offsetXOriginal, difference);
-						newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (int)(maxOffsetY));
-						images.add(new ImagePlus("", newProcessor));
-					}
+						newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (maxOffsetY));
 
-					stack = LeastSquareImageTransformation.convertToStack(images.toArray(new ImagePlus[images.size()]), images.size(), finalStackDimension.width, finalStackDimension.height);
+						path = IJ.getDir("temp") + newProcessor.hashCode() + ".tiff";
+						new FileSaver(new ImagePlus("", newProcessor)).saveAsTiff(path);
+						virtualStack.addSlice(newProcessor.hashCode() + ".tiff");
+						// images.add(new ImagePlus("", newProcessor));
+					}
+					stack = new ImagePlus("", virtualStack);
+					// stack = LeastSquareImageTransformation.convertToStack(images.toArray(new ImagePlus[images.size()]), images.size(), finalStackDimension.width, finalStackDimension.height);
 				}
 				else {
 					ArrayList<ImagePlus> images = new ArrayList<>();
@@ -304,9 +314,9 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
 					stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
 				}
-				String filePath = IJ.getDir("temp") + stack.hashCode();
+				String filePath = IJ.getDir("temp") + stack.hashCode() + ".tiff";
 				alignedImagePaths.add(filePath);
-				new FileSaver(stack).saveAsTiff(filePath);
+				// new FileSaver(stack).saveAsTiff(filePath);
 				this.loadingDialog.hideDialog();
 				alignDialog = new AlignDialog(stack, this);
 				alignDialog.pack();
