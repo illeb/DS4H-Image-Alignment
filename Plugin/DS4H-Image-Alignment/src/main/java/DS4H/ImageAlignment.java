@@ -19,13 +19,10 @@ import ij.gui.*;
 import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
-import ij.plugin.ImagesToStack;
 import ij.plugin.frame.RoiManager;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
-import loci.plugins.in.ImagePlusReader;
-import net.imagej.notebook.Images;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -37,6 +34,7 @@ import net.imagej.ImageJ;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.ColorModel;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,7 +42,6 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -59,7 +56,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	private AboutDialog aboutDialog;
 	private RemoveImageDialog removeImageDialog;
 
-	private List<String> alignedImagePaths = new ArrayList<>();
+	private List<String> tempImages = new ArrayList<>();
 	private boolean alignedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
@@ -88,7 +85,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		this.initialize(pathFile);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			this.alignedImagePaths.forEach(imagePath -> {
+			this.tempImages.forEach(imagePath -> {
 				try {
 					Files.deleteIfExists(Paths.get(imagePath));
 				} catch (IOException e) { }
@@ -199,7 +196,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 			// Timeout is necessary to ensure that the loadingDialog is shown
 			Utilities.setTimeout(() -> {
-				ImagePlus stack = null;
+				VirtualStack virtualStack = null;
+				ImagePlus transformedImagesStack = null;
 				if(event.isKeepOriginal()) {
 					// MAX IMAGE SIZE SEARCH AND SOURCE IMG SELECTION
 					// search for the maximum size of the images and the index of the image with the maximum width
@@ -251,14 +249,10 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 					ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
 					processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
-					// TODO: replace this arraylist with a virtualStack!
-					ArrayList<ImagePlus> images = new ArrayList<>();
-					VirtualStack virtualStack = new VirtualStack(finalStackDimension.width, finalStackDimension.height, ColorModel.getRGBdefault(), IJ.getDir("temp"));
-					String path = IJ.getDir("temp") + processor.hashCode()  + ".tiff";
-					new FileSaver(new ImagePlus("", processor)).saveAsTiff(path);
-					virtualStack.addSlice(processor.hashCode()+".tiff");
 
-					// images.add(new ImagePlus("", processor));
+					virtualStack = new VirtualStack(finalStackDimension.width, finalStackDimension.height, ColorModel.getRGBdefault(), IJ.getDir("temp"));
+					addToVirtualStack(new ImagePlus("", processor), virtualStack);
+
 					for(int i=0; i < manager.getNImages() ; i++) {
 						if(i == sourceImgIndex)
 							continue;
@@ -297,28 +291,24 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						int difference = (int)(managers.get(maxOffsetYIndex).getRoisAsArray()[0].getYBase() - managers.get(i).getRoisAsArray()[0].getYBase());
 						newProcessor.insert(transformedOriginalImage.getProcessor(), offsetXOriginal, difference);
 						newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (maxOffsetY));
-
-						path = IJ.getDir("temp") + newProcessor.hashCode() + ".tiff";
-						new FileSaver(new ImagePlus("", newProcessor)).saveAsTiff(path);
-						virtualStack.addSlice(newProcessor.hashCode() + ".tiff");
-						// images.add(new ImagePlus("", newProcessor));
+						addToVirtualStack(new ImagePlus("", newProcessor), virtualStack);
 					}
-					stack = new ImagePlus("", virtualStack);
-					// stack = LeastSquareImageTransformation.convertToStack(images.toArray(new ImagePlus[images.size()]), images.size(), finalStackDimension.width, finalStackDimension.height);
 				}
 				else {
-					ArrayList<ImagePlus> images = new ArrayList<>();
 					BufferedImage sourceImg = manager.get(0, true);
-					images.add(sourceImg);
-					for(int i=1; i < manager.getNImages(); i++)
-						images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
-					stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
+					virtualStack = new VirtualStack(sourceImg.getWidth(), sourceImg.getHeight(), ColorModel.getRGBdefault(), IJ.getDir("temp"));
+					addToVirtualStack(sourceImg, virtualStack);
+					for(int i=1; i < manager.getNImages(); i++) {
+						ImagePlus img = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
+						addToVirtualStack(img, virtualStack);
+					}
 				}
-				String filePath = IJ.getDir("temp") + stack.hashCode() + ".tiff";
-				alignedImagePaths.add(filePath);
-				// new FileSaver(stack).saveAsTiff(filePath);
+				transformedImagesStack = new ImagePlus("", virtualStack);
+				String filePath = IJ.getDir("temp") + transformedImagesStack.hashCode() + ".tiff";
+				new FileSaver(transformedImagesStack).saveAsTiff(filePath);
+				tempImages.add(filePath);
 				this.loadingDialog.hideDialog();
-				alignDialog = new AlignDialog(stack, this);
+				alignDialog = new AlignDialog(transformedImagesStack, this);
 				alignDialog.pack();
 				alignDialog.setVisible(true);
 			}, 10);
@@ -417,6 +407,12 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 	}
 
+	private void addToVirtualStack(ImagePlus img, VirtualStack virtualStack) {
+		String path = IJ.getDir("temp") + img.getProcessor().hashCode()  + ".tiff";
+		new FileSaver(img).saveAsTiff(path);
+		virtualStack.addSlice(new File(path).getName());
+		this.tempImages.add(path);
+	}
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
@@ -455,7 +451,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 		if(dialogEvent instanceof ReuseImageEvent) {
 			this.disposeAll();
-			this.initialize(alignedImagePaths.get(alignedImagePaths.size()-1));
+			this.initialize(tempImages.get(tempImages.size()-1));
 		}
 
 		if(dialogEvent instanceof DS4H.aligndialog.event.ExitEvent) {
