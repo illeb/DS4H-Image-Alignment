@@ -140,6 +140,15 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return maximumSize;
     }
 
+    public List<Dimension> getImagesDimensions() {
+        List<Dimension> dimensions;
+        dimensions = imageFiles.stream().reduce(new ArrayList<>(), (accDimensions, imageFile) -> {
+            accDimensions.addAll(imageFile.getImagesDimensions());
+            return accDimensions;
+        }, (accumulated, value) -> accumulated);
+        return dimensions;
+    }
+
     public List<ImageFile> getImageFiles() {
         return this.imageFiles;
     }

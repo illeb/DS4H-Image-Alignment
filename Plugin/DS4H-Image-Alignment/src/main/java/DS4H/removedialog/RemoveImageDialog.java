@@ -40,7 +40,7 @@ public class RemoveImageDialog extends JDialog {
             filePanel.add(rdb_select);
             JPanel pnl_fileDescription = new JPanel();
             pnl_fileDescription.setLayout(new BoxLayout(pnl_fileDescription, BoxLayout.Y_AXIS));
-            pnl_fileDescription.add(new JLabel(MessageFormat.format("File {0}, {1} Images", i+1, imageFile.getNImages(), imageFile.getNImages())));
+            pnl_fileDescription.add(new JLabel(MessageFormat.format("File {0}, {1} Images", i + 1, imageFile.getNImages(), imageFile.getNImages())));
             JLabel lbl_filePath = new JLabel(MessageFormat.format("{0}", imageFile.getPathFile()));
             lbl_filePath.setFont(new Font(lbl_filePath.getFont().getName(), lbl_filePath.getFont().getStyle(), lbl_filePath.getFont().getSize() - 1));
             lbl_filePath.setForeground(Color.GRAY);

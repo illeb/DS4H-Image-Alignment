@@ -167,14 +167,25 @@ public class ImageFile {
         return maximumSize;
     }
 
+    public ArrayList<Dimension> getImagesDimensions() {
+        ArrayList<Dimension> dimensions = new ArrayList<>();
+        for (int i = 0; i < importProcess.getReader().getSeriesCount(); i++) {
+            importProcess.getReader().setSeries(i);
+            dimensions.add(new Dimension(importProcess.getReader().getSizeX(), importProcess.getReader().getSizeY()));
+        }
+        return dimensions;
+    }
+
     public Raster getThumbs() {
+        Raster image = null;
         try {
-            return this.bufferedEditorImageReader.openThumbImage(0).getData();
+            image= this.bufferedEditorImageReader.openThumbImage(0).getData();
         } catch (FormatException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return image;
     }
 
     public String getPathFile() {
