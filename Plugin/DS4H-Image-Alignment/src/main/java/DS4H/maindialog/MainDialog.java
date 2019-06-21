@@ -35,6 +35,7 @@ public class MainDialog extends ImageWindow {
     private JPanel alignJPanel = new JPanel();
     private JButton btn_alignImages;
     private JCheckBox chk_rotateImages;
+    private JCheckBox chk_keepOriginal;
 
     private Panel all = new Panel();
 
@@ -73,7 +74,12 @@ public class MainDialog extends ImageWindow {
         chk_rotateImages.setSelected(true);
         chk_rotateImages.setEnabled(false);
 
-        // Remove the canvas from the window, to add it later
+        chk_keepOriginal = new JCheckBox("Keep original images");
+        chk_keepOriginal.setToolTipText("Keep the original images boundaries, applying stitching where necessary. NOTE: this operation is resource-intensive.");
+        chk_keepOriginal.setSelected(false);
+        chk_keepOriginal.setEnabled(false);
+
+        // Remove the canvas from the windlow, to add it later
         removeAll();
 
         setTitle(DIALOG_STATIC_TITLE);
@@ -140,6 +146,7 @@ public class MainDialog extends ImageWindow {
         alignJPanel.setLayout(alignLayout);
 
         alignJPanel.add(chk_rotateImages, actionsConstraints);
+        alignJPanel.add(chk_keepOriginal, actionsConstraints);
         alignJPanel.add(btn_alignImages, actionsConstraints);
         alignJPanel.setLayout(alignLayout);
 
@@ -213,7 +220,7 @@ public class MainDialog extends ImageWindow {
         });
         btn_prevImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.PREV)));
         btn_nextImage.addActionListener(e -> this.eventListener.onMainDialogEvent(new ChangeImageEvent(ChangeImageEvent.ChangeDirection.NEXT)));
-        btn_alignImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new AlignEvent(chk_rotateImages.isSelected())));
+        btn_alignImages.addActionListener(e -> this.eventListener.onMainDialogEvent(new AlignEvent(chk_rotateImages.isSelected(), chk_keepOriginal.isSelected())));
 
         // Markers addition handlers
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -285,6 +292,7 @@ public class MainDialog extends ImageWindow {
         menuItem = new MenuItem("Add image to current stack");
         menuItem.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
+            chooser.setCurrentDirectory(new File(image.getFilePath()));
             chooser.setMultiSelectionEnabled(true);
             chooser.showOpenDialog(null);
 
@@ -292,6 +300,9 @@ public class MainDialog extends ImageWindow {
             Arrays.stream(files).forEach(file -> eventListener.onMainDialogEvent(new AddFileEvent(file.getPath())));
         });
         fileMenu.add(menuItem);
+        menuItem = new MenuItem("Remove image...");
+        menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new RemoveImageEvent()));
+        // fileMenu.add(menuItem);
         fileMenu.addSeparator();
         menuItem = new MenuItem("Exit");
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new ExitEvent()));
@@ -305,6 +316,7 @@ public class MainDialog extends ImageWindow {
         menuBar.add(fileMenu);
         menuBar.add(aboutMenu);
         this.setMenuBar(menuBar);
+        new Zoom().run("scale");
         pack();
     }
 
@@ -360,9 +372,9 @@ public class MainDialog extends ImageWindow {
     }
 
     public void setAlignButtonEnabled(boolean enabled) {
-
         this.btn_alignImages.setEnabled(enabled);
         this.chk_rotateImages.setEnabled(enabled);
+        this.chk_keepOriginal.setEnabled(enabled);
     }
 
     public void setCopyCornersEnabled(boolean enabled) {

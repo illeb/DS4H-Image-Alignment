@@ -19,34 +19,30 @@ import loci.plugins.in.ImporterOptions;
 import loci.plugins.util.LociPrefs;
 
 import java.awt.*;
+import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class ImageFile {
     private String pathFile;
-    private BufferedImageReader bufferedImageReader;
-    private Dimension editorImageDimension;
     private boolean reducedImageMode;
     private List<RoiManager> roiManagers;
 
+    private Dimension editorImageDimension;
+    private BufferedImageReader bufferedEditorImageReader;
+    private ImportProcess importProcess;
     public ImageFile(String pathFile) {
         this.pathFile = pathFile;
         this.roiManagers = new ArrayList<>();
     }
 
     public void generateImageReader() throws FormatException, IOException, BufferedImagesManager.ImageOversizeException {
+        this.importProcess = getImageImportingProcess(pathFile);
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
-        try {
-            ServiceFactory factory = new ServiceFactory();
-            OMEXMLService service = factory.getInstance(OMEXMLService.class);
-            service.createOMEXMLMetadata();
-        }
-        catch (Exception exc) {
-            throw new FormatException("Could not create OME-XML store.", exc);
-        }
         imageReader.setId(pathFile);
-
+        // final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
             /*if(imageReader.getSeriesCount() <= 1)
@@ -67,18 +63,18 @@ public class ImageFile {
         }
 
         this.editorImageDimension = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
-        this.bufferedImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
-        for(int i=0; i < bufferedImageReader.getImageCount(); i++)
+        this.bufferedEditorImageReader = BufferedImageReader.makeBufferedImageReader(imageReader);
+        for(int i=0; i < bufferedEditorImageReader.getImageCount(); i++)
             this.roiManagers.add(new RoiManager(false));
     }
 
     public int getNImages() {
-        return this.bufferedImageReader.getImageCount();
+        return this.bufferedEditorImageReader.getImageCount();
     }
 
     public BufferedImage getImage(int index, boolean wholeSlide) throws IOException, FormatException {
         if(!wholeSlide)
-            return new BufferedImage("", bufferedImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
+            return new BufferedImage("", bufferedEditorImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
             if(virtualStack == null) {
                 try {
@@ -94,12 +90,8 @@ public class ImageFile {
         }
     }
 
-    public String getPathFile() {
-        return pathFile;
-    }
-
     public void dispose() throws IOException {
-        bufferedImageReader.close();
+        bufferedEditorImageReader.close();
         roiManagers.forEach(Window::dispose);
     }
 
@@ -113,19 +105,7 @@ public class ImageFile {
         options.setSplitChannels(false);
         options.setSeriesOn(0, true);
         ImportProcess process = new ImportProcess(options);
-        ImageReader imageReader = LociPrefs.makeImageReader();
-        IFormatReader baseReader = imageReader.getReader(pathFile);
-        ServiceFactory factory = new ServiceFactory();
-        OMEXMLService service = factory.getInstance(OMEXMLService.class);
-        loci.formats.meta.MetadataStore meta = service.createOMEXMLMetadata();
 
-        baseReader.setMetadataStore(meta);
-
-        baseReader.setMetadataFiltered(true);
-        baseReader.setGroupFiles(false);
-        baseReader.getMetadataOptions().setMetadataLevel(
-                MetadataLevel.ALL);
-        baseReader.setId(pathFile);
         DisplayHandler displayHandler = new DisplayHandler(process);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
@@ -148,7 +128,7 @@ public class ImageFile {
         return this.roiManagers;
     }
 
-    public static long estimateMemoryUsage(String pathFile)throws IOException, FormatException, DependencyException, ServiceException {
+    public static long estimateMemoryUsage(String pathFile) throws IOException, FormatException {
         ImporterOptions options = new ImporterOptions();
         options.loadOptions();
         options.setVirtual(false);
@@ -159,11 +139,56 @@ public class ImageFile {
         process.execute();
         return process.getMemoryUsage() * 3;
     }
-    public Dimension getEditorImageDimension() {
-        return editorImageDimension;
+
+    private ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
+        ImporterOptions options = new ImporterOptions();
+        options.loadOptions();
+        options.setVirtual(false);
+        options.setId(pathFile);
+        options.setSplitChannels(false);
+        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
+        options.setSeriesOn(0, true);
+        ImportProcess process = new ImportProcess(options);
+        process.execute();
+        return process;
     }
 
-    public void setEditorImageDimension(Dimension editorImageDimension) {
-        this.editorImageDimension = editorImageDimension;
+    /**
+     * Returns the maximum image size obtainable by the current ImageFile
+     * @return
+     */
+    public Dimension getMaximumSize() {
+        Dimension maximumSize = new Dimension();
+        for (int i = 0; i < importProcess.getReader().getSeriesCount(); i++) {
+            importProcess.getReader().setSeries(i);
+            maximumSize.width = importProcess.getReader().getSizeX() > maximumSize.width ? importProcess.getReader().getSizeX() : maximumSize.width;
+            maximumSize.height = importProcess.getReader().getSizeY() > maximumSize.height ? importProcess.getReader().getSizeY() : maximumSize.height;
+        }
+        return maximumSize;
+    }
+
+    public ArrayList<Dimension> getImagesDimensions() {
+        ArrayList<Dimension> dimensions = new ArrayList<>();
+        for (int i = 0; i < importProcess.getReader().getSeriesCount(); i++) {
+            importProcess.getReader().setSeries(i);
+            dimensions.add(new Dimension(importProcess.getReader().getSizeX(), importProcess.getReader().getSizeY()));
+        }
+        return dimensions;
+    }
+
+    public Raster getThumbs() {
+        Raster image = null;
+        try {
+            image= this.bufferedEditorImageReader.openThumbImage(0).getData();
+        } catch (FormatException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return image;
+    }
+
+    public String getPathFile() {
+        return pathFile;
     }
 }

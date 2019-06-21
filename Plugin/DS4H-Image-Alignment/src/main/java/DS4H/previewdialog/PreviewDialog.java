@@ -84,6 +84,8 @@ public class PreviewDialog extends ImageWindow {
         });
         this.setResizable(false);
         this.listener = listener;
+        new Zoom().run("scale");
+        pack();
     }
 
     public void changeImage(BufferedImage image, String title) {

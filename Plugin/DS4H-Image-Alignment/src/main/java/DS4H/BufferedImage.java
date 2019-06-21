@@ -6,13 +6,19 @@ import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 
 import java.awt.*;
+import java.io.File;
 import java.util.Arrays;
 
+/**
+ * Class that represents an image inside the DH4S alignment program.
+ * NOTE: this class suffers of poor OOP design: i don't have simply the time to do as it should be done (e.g. why "wholeSlideImagePath" exists if the image it's not a whole slide image?).
+ */
 public class BufferedImage extends ImagePlus {
     private RoiManager manager;
     private Roi[] roisBackup;
     private boolean isReduced;
-    private Dimension reduceImageDimensions;
+    private Dimension reducedImageDimensions;
+    private String filePath;
     public BufferedImage(String text, Image image, RoiManager manager, boolean isReduced) {
         super(text, image);
         this.manager = manager;
@@ -23,7 +29,7 @@ public class BufferedImage extends ImagePlus {
         super(text, image);
         this.manager = manager;
         this.isReduced = true;
-        this.reduceImageDimensions = reduceImageDimensions;
+        this.reducedImageDimensions = reduceImageDimensions;
     }
 
     public RoiManager getManager() {
@@ -43,6 +49,14 @@ public class BufferedImage extends ImagePlus {
     }
 
     public Dimension getEditorImageDimension() {
-        return reduceImageDimensions;
+        return reducedImageDimensions;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }

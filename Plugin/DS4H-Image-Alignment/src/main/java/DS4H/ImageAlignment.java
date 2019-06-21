@@ -12,14 +12,16 @@ import DS4H.maindialog.OnMainDialogEventListener;
 import DS4H.maindialog.event.*;
 import DS4H.previewdialog.event.CloseDialogEvent;
 import DS4H.previewdialog.event.IPreviewDialogEvent;
+import DS4H.removedialog.RemoveImageDialog;
 import ij.*;
 import ij.gui.*;
 
 import ij.io.FileSaver;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
-import ij.plugin.ImagesToStack;
 import ij.plugin.frame.RoiManager;
+import ij.process.ColorProcessor;
+import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
@@ -31,12 +33,13 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.ColorModel;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,8 +54,9 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	private AlignDialog alignDialog;
 	private LoadingDialog loadingDialog;
 	private AboutDialog aboutDialog;
+	private RemoveImageDialog removeImageDialog;
 
-	private List<String> alignedImagePaths = new ArrayList<>();
+	private List<String> tempImages = new ArrayList<>();
 	private boolean alignedImageSaved = false;
 
 	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
@@ -81,7 +85,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		this.initialize(pathFile);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			this.alignedImagePaths.forEach(imagePath -> {
+			this.tempImages.forEach(imagePath -> {
 				try {
 					Files.deleteIfExists(Paths.get(imagePath));
 				} catch (IOException e) { }
@@ -190,20 +194,121 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			AlignEvent event = (AlignEvent)dialogEvent;
 			this.loadingDialog.showDialog();
 
-			// Timeout is necessary to ensure that the loadingDialog is shwon
+			// Timeout is necessary to ensure that the loadingDialog is shown
 			Utilities.setTimeout(() -> {
-				ArrayList<ImagePlus> images = new ArrayList<>();
-				BufferedImage sourceImg = manager.get(0, true);
-				images.add(sourceImg);
-				for(int i=1; i < manager.getNImages(); i++)
-					images.add(LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate()));
-				ImagePlus stack = ImagesToStack.run(images.toArray(new ImagePlus[images.size()]));
-				String filePath = IJ.getDir("temp") + stack.hashCode();
-				alignedImagePaths.add(filePath);
-				new FileSaver(stack).saveAsTiff(filePath);
+				VirtualStack virtualStack = null;
+				ImagePlus transformedImagesStack = null;
+				if(event.isKeepOriginal()) {
+					// MAX IMAGE SIZE SEARCH AND SOURCE IMG SELECTION
+					// search for the maximum size of the images and the index of the image with the maximum width
+					List<Dimension> dimensions = manager.getImagesDimensions();
+					int sourceImgIndex = -1;
+					Dimension maximumSize = new Dimension();
+					for(int i =0 ; i < dimensions.size() ; i++) {
+
+						Dimension dimension = dimensions.get(i);
+						if(dimension.width > maximumSize.width) {
+							maximumSize.width = dimension.width;
+							sourceImgIndex = i;
+						}
+						if(dimension.height > maximumSize.height)
+							maximumSize.height = dimension.height;
+					}
+					BufferedImage sourceImg = manager.get(sourceImgIndex, true);
+
+					// FINAL STACK SIZE CALCULATION AND OFFSETS
+					Dimension finalStackDimension = new Dimension(maximumSize.width, maximumSize.height);
+					List<Integer> offsetsX = new ArrayList<>();
+					List<Integer> offsetsY = new ArrayList<>();
+					List<RoiManager> managers = manager.getRoiManagers();
+					for(int i=0; i < managers.size(); i++) {
+						if(i == sourceImgIndex){
+							offsetsX.add(0);
+							offsetsY.add(0);
+							continue;
+						}
+						Roi roi = managers.get(i).getRoisAsArray()[0];
+						offsetsX.add((int)(roi.getXBase() - sourceImg.getManager().getRoisAsArray()[0].getXBase()));
+						offsetsY.add((int)(roi.getYBase() - sourceImg.getManager().getRoisAsArray()[0].getYBase()));
+					}
+					int maxOffsetX = (offsetsX.stream().max(Comparator.naturalOrder()).get());
+					int maxOffsetXIndex = offsetsX.indexOf(maxOffsetX);
+					if(maxOffsetX <= 0) {
+						maxOffsetX = 0;
+						maxOffsetXIndex = -1;
+					}
+
+					int maxOffsetY = (offsetsY.stream().max(Comparator.naturalOrder()).get());
+					int maxOffsetYIndex = offsetsY.indexOf(maxOffsetY);
+					if(maxOffsetY <= 0) {
+						maxOffsetY = 0;
+					}
+					// Calculate the final stack size. It is calculated as maximumImageSize + maximum offset in respect of the source image
+					finalStackDimension.width = finalStackDimension.width + maxOffsetX;
+					finalStackDimension.height += sourceImg.getHeight() == maximumSize.height ? maxOffsetY : 0;
+
+					ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
+					processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
+
+					virtualStack = new VirtualStack(finalStackDimension.width, finalStackDimension.height, ColorModel.getRGBdefault(), IJ.getDir("temp"));
+					addToVirtualStack(new ImagePlus("", processor), virtualStack);
+
+					for(int i=0; i < manager.getNImages() ; i++) {
+						if(i == sourceImgIndex)
+							continue;
+						ImageProcessor newProcessor = new ColorProcessor(finalStackDimension.width, maximumSize.height);
+						ImagePlus transformedImage = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
+
+						BufferedImage transformedOriginalImage = manager.get(i, true);
+						final int[] edgeX = {-1};
+						final int[] edgeY = {-1};
+						Arrays.stream(transformedOriginalImage.getManager().getRoisAsArray()).forEach(roi -> {
+							if(edgeX[0] == -1 || edgeX[0] > roi.getXBase())
+								edgeX[0] = (int) roi.getXBase();
+							if(edgeY[0] == -1 || edgeY[0] > roi.getYBase())
+								edgeY[0] = (int) roi.getYBase();
+						});
+
+						final int[] edgeX2 = {-1};
+						final int[] edgeY2 = {-1};
+						Arrays.stream(sourceImg.getManager().getRoisAsArray()).forEach(roi -> {
+							if(edgeX2[0] == -1 || edgeX2[0] > roi.getXBase())
+								edgeX2[0] = (int) roi.getXBase();
+							if(edgeY2[0] == -1 || edgeY2[0] > roi.getYBase())
+								edgeY2[0] = (int) roi.getYBase();
+						});
+
+						int offsetXOriginal = 0;
+						if(offsetsX.get(i) < 0)
+							offsetXOriginal = Math.abs(offsetsX.get(i));
+						offsetXOriginal += maxOffsetXIndex != i ? maxOffsetX : 0;
+
+						int offsetXTransformed = 0;
+						if(offsetsX.get(i) > 0 && maxOffsetXIndex != i)
+							offsetXTransformed = Math.abs(offsetsX.get(i));
+						offsetXTransformed += maxOffsetX;
+
+						int difference = (int)(managers.get(maxOffsetYIndex).getRoisAsArray()[0].getYBase() - managers.get(i).getRoisAsArray()[0].getYBase());
+						newProcessor.insert(transformedOriginalImage.getProcessor(), offsetXOriginal, difference);
+						newProcessor.insert(transformedImage.getProcessor(), offsetXTransformed, (maxOffsetY));
+						addToVirtualStack(new ImagePlus("", newProcessor), virtualStack);
+					}
+				}
+				else {
+					BufferedImage sourceImg = manager.get(0, true);
+					virtualStack = new VirtualStack(sourceImg.getWidth(), sourceImg.getHeight(), ColorModel.getRGBdefault(), IJ.getDir("temp"));
+					addToVirtualStack(sourceImg, virtualStack);
+					for(int i=1; i < manager.getNImages(); i++) {
+						ImagePlus img = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
+						addToVirtualStack(img, virtualStack);
+					}
+				}
+				transformedImagesStack = new ImagePlus("", virtualStack);
+				String filePath = IJ.getDir("temp") + transformedImagesStack.hashCode() + ".tiff";
+				new FileSaver(transformedImagesStack).saveAsTiff(filePath);
+				tempImages.add(filePath);
 				this.loadingDialog.hideDialog();
-				JOptionPane.showMessageDialog(null, "Operation complete. Image has been temporarily saved to " + filePath);
-				alignDialog = new AlignDialog(stack, this);
+				alignDialog = new AlignDialog(transformedImagesStack, this);
 				alignDialog.pack();
 				alignDialog.setVisible(true);
 			}, 10);
@@ -295,8 +400,19 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					JOptionPane.showMessageDialog(null, ROI_NOT_ADDED_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 			}
 		}
+
+		if(dialogEvent instanceof RemoveImageEvent) {
+			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
+			this.removeImageDialog.setVisible(true);
+		}
 	}
 
+	private void addToVirtualStack(ImagePlus img, VirtualStack virtualStack) {
+		String path = IJ.getDir("temp") + img.getProcessor().hashCode()  + ".tiff";
+		new FileSaver(img).saveAsTiff(path);
+		virtualStack.addSlice(new File(path).getName());
+		this.tempImages.add(path);
+	}
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
@@ -320,22 +436,22 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	public void onAlignDialogEventListener(IAlignDialogEvent dialogEvent) {
 
 		if(dialogEvent instanceof SaveEvent) {
-            SaveDialog saveDialog = new SaveDialog("Save as", "aligned", ".tiff");
-            if (saveDialog.getFileName()==null) {
-                loadingDialog.hideDialog();
-                return;
-            }
-            String path = saveDialog.getDirectory()+saveDialog.getFileName();
-            loadingDialog.showDialog();
-            new FileSaver(alignDialog.getImagePlus()).saveAsTiff(path);
-            loadingDialog.hideDialog();
-            JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
-            this.alignedImageSaved = true;
+			SaveDialog saveDialog = new SaveDialog("Save as", "aligned", ".tiff");
+			if (saveDialog.getFileName()==null) {
+				loadingDialog.hideDialog();
+				return;
+			}
+			String path = saveDialog.getDirectory()+saveDialog.getFileName();
+			loadingDialog.showDialog();
+			new FileSaver(alignDialog.getImagePlus()).saveAsTiff(path);
+			loadingDialog.hideDialog();
+			JOptionPane.showMessageDialog(null, IMAGE_SAVED_MESSAGE, "Save complete", JOptionPane.INFORMATION_MESSAGE);
+			this.alignedImageSaved = true;
 		}
 
 		if(dialogEvent instanceof ReuseImageEvent) {
 			this.disposeAll();
-			this.initialize(alignedImagePaths.get(alignedImagePaths.size()-1));
+			this.initialize(tempImages.get(tempImages.size()-1));
 		}
 
 		if(dialogEvent instanceof DS4H.aligndialog.event.ExitEvent) {
@@ -378,6 +494,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	public void initialize(String pathFile) {
 
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+			this.loadingDialog.hideDialog();
 			if(e instanceof  OutOfMemoryError){
 				this.loadingDialog.hideDialog();
 				JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
@@ -433,8 +550,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			e.printStackTrace();
 		}
 		finally {
+			this.loadingDialog.hideDialog();
 			if(!complete) {
-				this.loadingDialog.hideDialog();
 				this.run();
 			}
 
@@ -459,6 +576,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			this.previewDialog.dispose();
 		if(this.alignDialog != null)
 			this.alignDialog.dispose();
+		if(this.removeImageDialog != null)
+			this.removeImageDialog.dispose();
 		this.manager.dispose();
 		IJ.freeMemory();
 		TotalMemory = 0;

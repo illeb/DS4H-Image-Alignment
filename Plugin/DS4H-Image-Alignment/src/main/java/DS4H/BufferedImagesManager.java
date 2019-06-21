@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
 import loci.formats.FormatException;
 
+import java.awt.*;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         BufferedImage image = null;
         try {
             image = imageFile.getImage(index - progressive,  wholeSlide);
+            image.setFilePath(imageFile.getPathFile());
             image.setTitle(MessageFormat.format("Editor Image {0}/{1}", index + 1, this.getNImages()));
         } catch (Exception e) {
             e.printStackTrace();
@@ -128,5 +130,27 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return  result;
     }
 
+    public Dimension getMaximumSize() {
+        Dimension maximumSize = new Dimension();
+        imageFiles.forEach(imageFile -> {
+            Dimension dimension = imageFile.getMaximumSize();
+            maximumSize.width = dimension.width > maximumSize.width ? dimension.width : maximumSize.width;
+            maximumSize.height = dimension.height > maximumSize.height ? dimension.height : maximumSize.height;
+        });
+        return maximumSize;
+    }
+
+    public List<Dimension> getImagesDimensions() {
+        List<Dimension> dimensions;
+        dimensions = imageFiles.stream().reduce(new ArrayList<>(), (accDimensions, imageFile) -> {
+            accDimensions.addAll(imageFile.getImagesDimensions());
+            return accDimensions;
+        }, (accumulated, value) -> accumulated);
+        return dimensions;
+    }
+
+    public List<ImageFile> getImageFiles() {
+        return this.imageFiles;
+    }
     public static class ImageOversizeException extends Exception { }
 }
