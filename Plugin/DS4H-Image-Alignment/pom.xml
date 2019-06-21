@@ -14,7 +14,7 @@
 
 	<groupId>DS4H-Image-Alignment</groupId>
 	<artifactId>DS4H-Image-Alignment</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 
 	<name>DS4H Image Alignment plugin</name>
 	<description>DS4H Image Alignment plugin for medical research</description>
