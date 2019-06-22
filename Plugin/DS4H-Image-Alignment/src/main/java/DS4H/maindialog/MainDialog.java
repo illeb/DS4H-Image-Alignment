@@ -302,7 +302,7 @@ public class MainDialog extends ImageWindow {
         fileMenu.add(menuItem);
         menuItem = new MenuItem("Remove image...");
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new RemoveImageEvent()));
-        // fileMenu.add(menuItem);
+        fileMenu.add(menuItem);
         fileMenu.addSeparator();
         menuItem = new MenuItem("Exit");
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new ExitEvent()));

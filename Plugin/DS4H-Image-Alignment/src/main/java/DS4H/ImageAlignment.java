@@ -402,8 +402,13 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
+			try{
 			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
 			this.removeImageDialog.setVisible(true);
+
+			}catch (Exception e) {e.printStackTrace();
+
+			}
 		}
 	}
 

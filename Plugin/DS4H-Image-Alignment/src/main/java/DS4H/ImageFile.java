@@ -5,24 +5,18 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageConverter;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
-import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
-import loci.formats.in.MetadataLevel;
-import loci.formats.services.OMEXMLService;
 import loci.plugins.in.DisplayHandler;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
-import loci.plugins.util.LociPrefs;
 
 import java.awt.*;
-import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class ImageFile {
@@ -176,16 +170,15 @@ public class ImageFile {
         return dimensions;
     }
 
-    public Raster getThumbs() {
-        Raster image = null;
+    public List<java.awt.image.BufferedImage> getThumbs() {
+        List<java.awt.image.BufferedImage> thumbs = new ArrayList<>();
         try {
-            image= this.bufferedEditorImageReader.openThumbImage(0).getData();
-        } catch (FormatException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            for(int i = 0; i < bufferedEditorImageReader.getImageCount(); i++)
+                thumbs.add(this.bufferedEditorImageReader.openThumbImage(i));
+        } catch (FormatException | IOException e) {
             e.printStackTrace();
         }
-        return image;
+        return thumbs;
     }
 
     public String getPathFile() {
