@@ -2,7 +2,11 @@ package DS4H;
 
 import ij.IJ;
 import ij.ImagePlus;
-import ij.process.ImageProcessor;
+import ij.ImageStack;
+import ij.gui.Overlay;
+import ij.gui.Roi;
+import ij.io.FileInfo;
+import ij.process.*;
 import mpicbg.ij.Mapping;
 import mpicbg.ij.TransformMeshMapping;
 import mpicbg.models.*;
@@ -80,5 +84,28 @@ public class LeastSquareImageTransformation {
 
         target.setProcessor( "Transformed" + source.getTitle(), ipTarget );
         return target;
+    }
+
+    public static ImagePlus convertToStack(ImagePlus[] images, int count, int width, int height) {
+        double min = Double.MAX_VALUE;
+        double max = -Double.MAX_VALUE;
+        ImageStack stack = new ImageStack(width, height);
+        FileInfo fi = images[0].getOriginalFileInfo();
+        if (fi!=null && fi.directory==null) fi = null;
+        for (int i=0; i<count; i++) {
+            ImageProcessor ip = images[i].getProcessor();
+            if (ip.getMin() < min) min = ip.getMin();
+            if (ip.getMax() > max) max = ip.getMax();
+            if (ip.getWidth() != width || ip.getHeight() != height) {
+                ImageProcessor ip2 = new ColorProcessor(width, height);
+                int xoff = 0, yoff = 0;
+                ip2.insert(ip, xoff, yoff);
+                ip = ip2;
+            }
+            stack.addSlice("", ip);
+        }
+        ImagePlus imp = new ImagePlus("", stack);
+        imp.getProcessor().setMinAndMax(min, max);
+        return imp;
     }
 }

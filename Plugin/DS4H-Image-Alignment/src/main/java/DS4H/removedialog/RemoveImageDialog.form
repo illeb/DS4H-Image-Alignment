@@ -12,25 +12,35 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="fe44" class="javax.swing.JButton" binding="button2" default-binding="true">
+          <component id="fe44" class="javax.swing.JButton" binding="btn_delete">
             <constraints/>
             <properties>
-              <text value="Button"/>
+              <text value="Delete"/>
             </properties>
           </component>
-          <component id="4da3e" class="javax.swing.JButton" binding="btn_ok">
+          <component id="4da3e" class="javax.swing.JButton" binding="btn_close">
             <constraints/>
             <properties>
-              <text value="Button"/>
+              <text value="Close"/>
             </properties>
           </component>
         </children>
       </grid>
       <scrollpane id="cdc41" binding="pnl_images_s">
         <constraints border-constraint="Center"/>
-        <properties/>
+        <properties>
+          <alignmentX value="0.0"/>
+          <alignmentY value="0.0"/>
+        </properties>
         <border type="none"/>
-        <children/>
+        <children>
+          <grid id="6e285" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints/>
+            <properties/>
+            <border type="none"/>
+            <children/>
+          </grid>
+        </children>
       </scrollpane>
     </children>
   </grid>
