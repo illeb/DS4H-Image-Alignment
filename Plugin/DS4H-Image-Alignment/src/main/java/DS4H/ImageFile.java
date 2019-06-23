@@ -13,7 +13,6 @@ import loci.plugins.in.DisplayHandler;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
-
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
