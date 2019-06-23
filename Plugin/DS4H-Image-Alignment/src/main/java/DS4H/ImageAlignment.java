@@ -23,6 +23,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
+import loci.plugins.in.ImagePlusReader;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
@@ -42,6 +43,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
@@ -311,6 +313,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				alignDialog = new AlignDialog(transformedImagesStack, this);
 				alignDialog.pack();
 				alignDialog.setVisible(true);
+				this.loadingDialog.hideDialog();
 			}, 10);
 		}
 
@@ -402,8 +405,13 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
+			try{
 			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
 			this.removeImageDialog.setVisible(true);
+
+			}catch (Exception e) {e.printStackTrace();
+
+			}
 		}
 	}
 
