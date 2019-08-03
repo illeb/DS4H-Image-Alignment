@@ -26,22 +26,12 @@
           </component>
         </children>
       </grid>
-      <scrollpane id="cdc41" binding="pnl_images_s">
+      <grid id="94dda" binding="pnl_images" layout-manager="BorderLayout" hgap="5" vgap="5">
         <constraints border-constraint="Center"/>
-        <properties>
-          <alignmentX value="0.0"/>
-          <alignmentY value="0.0"/>
-        </properties>
+        <properties/>
         <border type="none"/>
-        <children>
-          <grid id="6e285" layout-manager="BorderLayout" hgap="0" vgap="0">
-            <constraints/>
-            <properties/>
-            <border type="none"/>
-            <children/>
-          </grid>
-        </children>
-      </scrollpane>
+        <children/>
+      </grid>
     </children>
   </grid>
 </form>
