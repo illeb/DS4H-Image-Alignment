@@ -12,7 +12,9 @@ import DS4H.maindialog.OnMainDialogEventListener;
 import DS4H.maindialog.event.*;
 import DS4H.previewdialog.event.CloseDialogEvent;
 import DS4H.previewdialog.event.IPreviewDialogEvent;
+import DS4H.removedialog.OnRemoveDialogEventListener;
 import DS4H.removedialog.RemoveImageDialog;
+import DS4H.removedialog.event.IRemoveDialogEvent;
 import ij.*;
 import ij.gui.*;
 
@@ -48,7 +50,7 @@ import java.util.stream.IntStream;
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>DSH4 Image Alignment")
-public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener {
+public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener, OnRemoveDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;
 	private MainDialog mainDialog;
@@ -405,13 +407,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
-			try{
-			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
+			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles(), this);
 			this.removeImageDialog.setVisible(true);
-
-			}catch (Exception e) {e.printStackTrace();
-
-			}
 		}
 	}
 
@@ -421,6 +418,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		virtualStack.addSlice(new File(path).getName());
 		this.tempImages.add(path);
 	}
+
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
@@ -472,6 +470,25 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			}
 			alignDialog.setVisible(false);
 			alignDialog.dispose();
+		}
+	}
+
+	@Override
+	public void onRemoveDialogEvent(IRemoveDialogEvent removeEvent) {
+		if(removeEvent instanceof DS4H.removedialog.event.ExitEvent) {
+			removeImageDialog.setVisible(false);
+			removeImageDialog.dispose();
+		}
+
+		if(removeEvent instanceof DS4H.removedialog.event.RemoveImageEvent) {
+			int imageFileIndex = ((DS4H.removedialog.event.RemoveImageEvent)removeEvent).getImageFileIndex();
+
+			this.removeImageDialog.removeImageFile(imageFileIndex);
+			this.manager.removeImageFile(imageFileIndex);
+			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
+			mainDialog.setNextImageButtonEnabled(manager.hasNext());
+			mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+			this.refreshRoiGUI();
 		}
 	}
 

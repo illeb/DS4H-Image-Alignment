@@ -152,5 +152,10 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     public List<ImageFile> getImageFiles() {
         return this.imageFiles;
     }
+
+    public void removeImageFile(int index) {
+        this.imageFiles.remove(index);
+    }
+    
     public static class ImageOversizeException extends Exception { }
 }

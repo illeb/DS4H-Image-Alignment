@@ -169,15 +169,19 @@ public class ImageFile {
         return dimensions;
     }
 
+    private List<java.awt.image.BufferedImage> cached_thumbs;
     public List<java.awt.image.BufferedImage> getThumbs() {
-        List<java.awt.image.BufferedImage> thumbs = new ArrayList<>();
         try {
-            for(int i = 0; i < bufferedEditorImageReader.getImageCount(); i++)
-                thumbs.add(this.bufferedEditorImageReader.openThumbImage(i));
+            // lazy initialization
+            if(this.cached_thumbs == null) {
+                this.cached_thumbs = new ArrayList<>();
+                for (int i = 0; i < bufferedEditorImageReader.getImageCount(); i++)
+                    cached_thumbs.add(this.bufferedEditorImageReader.openThumbImage(i));
+            }
         } catch (FormatException | IOException e) {
             e.printStackTrace();
         }
-        return thumbs;
+        return cached_thumbs;
     }
 
     public String getPathFile() {
