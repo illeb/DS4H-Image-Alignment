@@ -153,9 +153,14 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
         return this.imageFiles;
     }
 
+    /**
+     * Remove the imageFile from the manager and updates the image index
+     * @param index
+     */
     public void removeImageFile(int index) {
         this.imageFiles.remove(index);
+        this.imageIndex = this.imageIndex >= this.getNImages() ? index - 1 : index;
     }
-    
+
     public static class ImageOversizeException extends Exception { }
 }
