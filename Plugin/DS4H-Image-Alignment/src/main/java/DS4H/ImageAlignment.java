@@ -133,9 +133,14 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		if(dialogEvent instanceof ChangeImageEvent) {
 			new Thread(() -> {
 				ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
+				if((event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT && !manager.hasNext()) ||
+                        event.getChangeDirection() == ChangeImageEvent.ChangeDirection.PREV && !manager.hasPrevious()){
+                    this.loadingDialog.hideDialog();
+				    return;
+                }
+
 				// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 				image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
-
 				mainDialog.changeImage(image);
 				IJ.freeMemory();
 				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
@@ -332,7 +337,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					return;
 			}
 
-			if(dialogEvent instanceof OpenFileEvent){
+			if(dialogEvent instanceof OpenFileEvent) {
 				String pathFile = promptForFile();
 				if (pathFile.equals("nullnull"))
 					return;
@@ -408,7 +413,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
-		    if(this.removeImageDialog.isVisible())
+		    if(this.removeImageDialog != null && this.removeImageDialog.isVisible())
 		        return;
 
 		    this.loadingDialog.showDialog();

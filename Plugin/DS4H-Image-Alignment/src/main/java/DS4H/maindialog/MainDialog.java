@@ -282,6 +282,7 @@ public class MainDialog extends ImageWindow {
             }
 
         });
+
         menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("File");
@@ -381,12 +382,21 @@ public class MainDialog extends ImageWindow {
         this.btn_copyCorners.setEnabled(enabled);
     }
 
+    // a simple debounce variable that can put "on hold" a key_release event
+    private boolean debounce = false;
     private class KeyboardEventDispatcher implements KeyEventDispatcher {
         @Override
         public boolean dispatchKeyEvent(KeyEvent e) {
             if (e.getID() == KeyEvent.KEY_RELEASED && e.getKeyCode() == KeyEvent.VK_C && mouseOverCanvas) {
                 Point clickCoords = getCanvas().getCursorLoc();
                 eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
+            }
+
+            if(debounce == false && e.getID() == KeyEvent.KEY_RELEASED && (e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_D)) {
+                debounce = true;
+                System.out.println("bounce");
+                eventListener.onMainDialogEvent(new ChangeImageEvent(e.getKeyCode() == KeyEvent.VK_A ? ChangeImageEvent.ChangeDirection.PREV : ChangeImageEvent.ChangeDirection.NEXT));
+                debounce = false;
             }
             return false;
         }
