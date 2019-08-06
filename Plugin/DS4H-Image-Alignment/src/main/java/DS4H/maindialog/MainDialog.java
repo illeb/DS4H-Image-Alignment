@@ -153,27 +153,17 @@ public class MainDialog extends ImageWindow {
         // Buttons panel
         GridBagLayout buttonsLayout = new GridBagLayout();
         GridBagConstraints buttonsConstraints = new GridBagConstraints();
-        buttonsPanel.setLayout(buttonsLayout);
-        buttonsConstraints.anchor = GridBagConstraints.NORTHWEST;
-        buttonsConstraints.fill = GridBagConstraints.HORIZONTAL;
-        buttonsConstraints.gridwidth = 1;
-        buttonsConstraints.gridheight = 1;
-        buttonsConstraints.gridx = 0;
-        buttonsConstraints.gridy = 0;
+        //buttonsPanel.setLayout(buttonsLayout);
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
         buttonsPanel.add(cornersJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
         buttonsPanel.add(actionsJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
         buttonsPanel.add(alignJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
         buttonsConstraints.insets = new Insets(5, 5, 6, 6);
-
         GridBagLayout layout = new GridBagLayout();
         GridBagConstraints allConstraints = new GridBagConstraints();
         all.setLayout(layout);
         // sets a little bit of padding to ensure that the imageplus text is shown and not covered by the panel
         allConstraints.insets = new Insets(5, 0, 0, 0);
-
         allConstraints.anchor = GridBagConstraints.NORTHWEST;
         allConstraints.fill = GridBagConstraints.BOTH;
         allConstraints.gridwidth = 1;
@@ -184,7 +174,6 @@ public class MainDialog extends ImageWindow {
         allConstraints.weighty = 0;
 
         all.add(buttonsPanel, allConstraints);
-
         allConstraints.gridx++;
         allConstraints.weightx = 1;
         allConstraints.weighty = 1;
@@ -394,7 +383,6 @@ public class MainDialog extends ImageWindow {
 
             if(debounce == false && e.getID() == KeyEvent.KEY_RELEASED && (e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_D)) {
                 debounce = true;
-                System.out.println("bounce");
                 eventListener.onMainDialogEvent(new ChangeImageEvent(e.getKeyCode() == KeyEvent.VK_A ? ChangeImageEvent.ChangeDirection.PREV : ChangeImageEvent.ChangeDirection.NEXT));
                 debounce = false;
             }
