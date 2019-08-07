@@ -49,7 +49,7 @@ import java.util.stream.IntStream;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>DSH4 Image Alignment")
+		menuPath = "Plugins>Registration>DSH4 Image Alignment")
 public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener, OnRemoveDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;
