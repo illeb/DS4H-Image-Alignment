@@ -86,6 +86,7 @@ public class MainDialog extends ImageWindow {
 
         // Training panel (left side of the GUI)
         cornersJPanel.setBorder(BorderFactory.createTitledBorder("Corners"));
+
         GridBagLayout trainingLayout = new GridBagLayout();
         GridBagConstraints trainingConstraints = new GridBagConstraints();
         trainingConstraints.anchor = GridBagConstraints.NORTHWEST;
@@ -151,22 +152,11 @@ public class MainDialog extends ImageWindow {
         alignJPanel.setLayout(alignLayout);
 
         // Buttons panel
-        GridBagLayout buttonsLayout = new GridBagLayout();
-        GridBagConstraints buttonsConstraints = new GridBagConstraints();
-        buttonsPanel.setLayout(buttonsLayout);
-        buttonsConstraints.anchor = GridBagConstraints.NORTHWEST;
-        buttonsConstraints.fill = GridBagConstraints.HORIZONTAL;
-        buttonsConstraints.gridwidth = 1;
-        buttonsConstraints.gridheight = 1;
-        buttonsConstraints.gridx = 0;
-        buttonsConstraints.gridy = 0;
-        buttonsPanel.add(cornersJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
-        buttonsPanel.add(actionsJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
-        buttonsPanel.add(alignJPanel, buttonsConstraints);
-        buttonsConstraints.gridy++;
-        buttonsConstraints.insets = new Insets(5, 5, 6, 6);
+        buttonsPanel.setBackground(Color.GRAY);
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
+        buttonsPanel.add(cornersJPanel);
+        buttonsPanel.add(actionsJPanel);
+        buttonsPanel.add(alignJPanel);
 
         GridBagLayout layout = new GridBagLayout();
         GridBagConstraints allConstraints = new GridBagConstraints();
@@ -175,7 +165,6 @@ public class MainDialog extends ImageWindow {
         allConstraints.insets = new Insets(5, 0, 0, 0);
 
         allConstraints.anchor = GridBagConstraints.NORTHWEST;
-        allConstraints.fill = GridBagConstraints.BOTH;
         allConstraints.gridwidth = 1;
         allConstraints.gridheight = 1;
         allConstraints.gridx = 0;
@@ -184,10 +173,11 @@ public class MainDialog extends ImageWindow {
         allConstraints.weighty = 0;
 
         all.add(buttonsPanel, allConstraints);
-
         allConstraints.gridx++;
         allConstraints.weightx = 1;
         allConstraints.weighty = 1;
+        // this is just a cheap trick i made 'cause i don't properly know java swing: let's fake the background of the window so the it seems the column on the left is full length vertically
+        all.setBackground(new Color(238,238,238));
         all.add(canvas, allConstraints);
 
         GridBagLayout wingb = new GridBagLayout();
@@ -199,7 +189,6 @@ public class MainDialog extends ImageWindow {
         winc.weighty = 1;
         setLayout(wingb);
         add(all, winc);
-
         // Propagate all listeners
         for (Component p : new Component[]{all, buttonsPanel}) {
             for (KeyListener kl : getKeyListeners()) {
