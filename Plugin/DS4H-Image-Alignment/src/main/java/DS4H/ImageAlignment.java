@@ -109,7 +109,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	}
 
 	@Override
-	public void onMainDialogEvent(IMainDialogEvent dialogEvent) {
+	public Thread onMainDialogEvent(IMainDialogEvent dialogEvent) {
 		WindowManager.setCurrentWindow(image.getWindow());
 		if(dialogEvent instanceof PreviewImageEvent) {
 			new Thread(() -> {
@@ -131,7 +131,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof ChangeImageEvent) {
-			new Thread(() -> {
+			Thread t = new Thread(() -> {
 				ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 				if((event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT && !manager.hasNext()) ||
                         event.getChangeDirection() == ChangeImageEvent.ChangeDirection.PREV && !manager.hasPrevious()){
@@ -149,8 +149,10 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				this.loadingDialog.hideDialog();
 
 				refreshRoiGUI();
-			}).start();
+			});
+			t.start();
 			this.loadingDialog.showDialog();
+			return t;
 		}
 
 		if(dialogEvent instanceof DeleteRoiEvent){
@@ -334,13 +336,13 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
 
 				if(answer == 1)
-					return;
+					return null;
 			}
 
 			if(dialogEvent instanceof OpenFileEvent) {
 				String pathFile = promptForFile();
 				if (pathFile.equals("nullnull"))
-					return;
+					return null;
 				this.disposeAll();
 				this.initialize(pathFile);
 			}
@@ -367,7 +369,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				TotalMemory += memory;
 				if(TotalMemory >= Runtime.getRuntime().maxMemory()) {
 					JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
-					return;
+					return null;
 				}
 				manager.addFile(pathFile);
 			}
@@ -414,7 +416,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 		if(dialogEvent instanceof RemoveImageEvent) {
 		    if(this.removeImageDialog != null && this.removeImageDialog.isVisible())
-		        return;
+		        return null;
 
 		    this.loadingDialog.showDialog();
 		    Utilities.setTimeout(() -> {
@@ -424,6 +426,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
                 this.loadingDialog.requestFocus();
             }, 20);
 		}
+
+		return null;
 	}
 
 	private void addToVirtualStack(ImagePlus img, VirtualStack virtualStack) {

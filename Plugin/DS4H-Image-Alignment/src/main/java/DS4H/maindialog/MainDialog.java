@@ -380,13 +380,19 @@ public class MainDialog extends ImageWindow {
                 Point clickCoords = getCanvas().getCursorLoc();
                 eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
             }
-
             if(debounce == false && e.getID() == KeyEvent.KEY_RELEASED && (e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_D)) {
                 debounce = true;
-                System.out.println("bounce");
-                eventListener.onMainDialogEvent(new ChangeImageEvent(e.getKeyCode() == KeyEvent.VK_A ? ChangeImageEvent.ChangeDirection.PREV : ChangeImageEvent.ChangeDirection.NEXT));
-                debounce = false;
+                new Thread(() -> {
+                    try {
+                        eventListener.onMainDialogEvent(new ChangeImageEvent(e.getKeyCode() == KeyEvent.VK_A ? ChangeImageEvent.ChangeDirection.PREV : ChangeImageEvent.ChangeDirection.NEXT)).join(0);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                    debounce = false;
+                }).start();
             }
+
+            e.consume();
             return false;
         }
     }
