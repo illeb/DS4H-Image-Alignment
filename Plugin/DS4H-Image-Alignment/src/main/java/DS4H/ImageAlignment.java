@@ -12,7 +12,9 @@ import DS4H.maindialog.OnMainDialogEventListener;
 import DS4H.maindialog.event.*;
 import DS4H.previewdialog.event.CloseDialogEvent;
 import DS4H.previewdialog.event.IPreviewDialogEvent;
+import DS4H.removedialog.OnRemoveDialogEventListener;
 import DS4H.removedialog.RemoveImageDialog;
+import DS4H.removedialog.event.IRemoveDialogEvent;
 import ij.*;
 import ij.gui.*;
 
@@ -47,8 +49,8 @@ import java.util.stream.IntStream;
 
 /** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
-		menuPath = "Plugins>DSH4 Image Alignment")
-public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener {
+		menuPath = "Plugins>Registration>DSH4 Image Alignment")
+public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener, OnRemoveDialogEventListener {
 	private BufferedImagesManager manager;
 	private BufferedImage image = null;
 	private MainDialog mainDialog;
@@ -65,6 +67,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: align operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String ALIGNED_IMAGE_NOT_SAVED_MESSAGE = "Aligned images not saved: are you sure you want to exit without saving?";
+    static private String DELETE_ALL_IMAGES = "Do you confirm to delete all the images of the stack?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
 	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
@@ -106,7 +109,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	}
 
 	@Override
-	public void onMainDialogEvent(IMainDialogEvent dialogEvent) {
+	public Thread onMainDialogEvent(IMainDialogEvent dialogEvent) {
 		WindowManager.setCurrentWindow(image.getWindow());
 		if(dialogEvent instanceof PreviewImageEvent) {
 			new Thread(() -> {
@@ -128,11 +131,16 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof ChangeImageEvent) {
-			new Thread(() -> {
+			Thread t = new Thread(() -> {
 				ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
+				if((event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT && !manager.hasNext()) ||
+                        event.getChangeDirection() == ChangeImageEvent.ChangeDirection.PREV && !manager.hasPrevious()){
+                    this.loadingDialog.hideDialog();
+				    return;
+                }
+
 				// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 				image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
-
 				mainDialog.changeImage(image);
 				IJ.freeMemory();
 				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
@@ -141,8 +149,10 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				this.loadingDialog.hideDialog();
 
 				refreshRoiGUI();
-			}).start();
+			});
+			t.start();
 			this.loadingDialog.showDialog();
+			return t;
 		}
 
 		if(dialogEvent instanceof DeleteRoiEvent){
@@ -326,13 +336,13 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
 
 				if(answer == 1)
-					return;
+					return null;
 			}
 
-			if(dialogEvent instanceof OpenFileEvent){
+			if(dialogEvent instanceof OpenFileEvent) {
 				String pathFile = promptForFile();
 				if (pathFile.equals("nullnull"))
-					return;
+					return null;
 				this.disposeAll();
 				this.initialize(pathFile);
 			}
@@ -359,7 +369,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				TotalMemory += memory;
 				if(TotalMemory >= Runtime.getRuntime().maxMemory()) {
 					JOptionPane.showMessageDialog(null, INSUFFICIENT_MEMORY_MESSAGE, "Error: insufficient memory", JOptionPane.ERROR_MESSAGE);
-					return;
+					return null;
 				}
 				manager.addFile(pathFile);
 			}
@@ -405,14 +415,19 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
-			try{
-			this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles());
-			this.removeImageDialog.setVisible(true);
+		    if(this.removeImageDialog != null && this.removeImageDialog.isVisible())
+		        return null;
 
-			}catch (Exception e) {e.printStackTrace();
-
-			}
+		    this.loadingDialog.showDialog();
+		    Utilities.setTimeout(() -> {
+                this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles(), this);
+                this.removeImageDialog.setVisible(true);
+                this.loadingDialog.hideDialog();
+                this.loadingDialog.requestFocus();
+            }, 20);
 		}
+
+		return null;
 	}
 
 	private void addToVirtualStack(ImagePlus img, VirtualStack virtualStack) {
@@ -421,6 +436,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		virtualStack.addSlice(new File(path).getName());
 		this.tempImages.add(path);
 	}
+
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
 		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
@@ -472,6 +488,49 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			}
 			alignDialog.setVisible(false);
 			alignDialog.dispose();
+		}
+	}
+
+	@Override
+	public void onRemoveDialogEvent(IRemoveDialogEvent removeEvent) {
+		if(removeEvent instanceof DS4H.removedialog.event.ExitEvent) {
+			removeImageDialog.setVisible(false);
+			removeImageDialog.dispose();
+		}
+
+		if(removeEvent instanceof DS4H.removedialog.event.RemoveImageEvent) {
+			int imageFileIndex = ((DS4H.removedialog.event.RemoveImageEvent)removeEvent).getImageFileIndex();
+
+            // only a image is available: if user remove this image we need to ask him to choose another one!
+			if(this.manager.getImageFiles().size() == 1) {
+                String[] buttons = { "Yes", "No"};
+                int answer = JOptionPane.showOptionDialog(null, DELETE_ALL_IMAGES, "Careful now",
+                        JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
+
+                if(answer == 0) {
+                    String pathFile = promptForFile();
+                    if (pathFile.equals("nullnull")){
+
+                        disposeAll();
+                        System.exit(0);
+                        return;
+                    }
+                    this.disposeAll();
+                    this.initialize(pathFile);
+                }
+            }
+			else {
+
+                // remove the image selected
+                this.removeImageDialog.removeImageFile(imageFileIndex);
+                this.manager.removeImageFile(imageFileIndex);
+                image = manager.get(manager.getCurrentIndex());
+                mainDialog.changeImage(image);
+                mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
+                mainDialog.setNextImageButtonEnabled(manager.hasNext());
+                mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+                this.refreshRoiGUI();
+            }
 		}
 	}
 

@@ -112,7 +112,7 @@
                 <properties>
                   <alignmentX value="0.0"/>
                   <alignmentY value="1.0"/>
-                  <text value="v. 1.0.2 1906"/>
+                  <text value="v. 1.0.3 1908"/>
                 </properties>
               </component>
               <component id="45134" class="javax.swing.JLabel">
