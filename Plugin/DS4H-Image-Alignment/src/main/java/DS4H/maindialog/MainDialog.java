@@ -379,7 +379,6 @@ public class MainDialog extends ImageWindow {
             if (e.getID() == KeyEvent.KEY_RELEASED && e.getKeyCode() == KeyEvent.VK_C && mouseOverCanvas) {
                 Point clickCoords = getCanvas().getCursorLoc();
                 eventListener.onMainDialogEvent(new AddRoiEvent(clickCoords));
-                e.consume();
             }
             if(debounce == false && e.getID() == KeyEvent.KEY_RELEASED && (e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_D)) {
                 debounce = true;
@@ -391,8 +390,10 @@ public class MainDialog extends ImageWindow {
                     }
                     debounce = false;
                 }).start();
-                e.consume();
             }
+
+            if(e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_D || e.getKeyCode() == KeyEvent.VK_C)
+                e.consume();
             return false;
         }
     }
