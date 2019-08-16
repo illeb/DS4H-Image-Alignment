@@ -221,7 +221,7 @@ public class AboutDialog extends JDialog {
         lbl_version = new JLabel();
         lbl_version.setAlignmentX(0.0f);
         lbl_version.setAlignmentY(1.0f);
-        lbl_version.setText("v. 1.0.2 1906");
+        lbl_version.setText("v. 1.0.3 1908");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 1;
