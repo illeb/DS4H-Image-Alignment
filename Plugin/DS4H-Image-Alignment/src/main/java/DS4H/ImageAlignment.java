@@ -142,13 +142,12 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 				image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
 				mainDialog.changeImage(image);
-				IJ.freeMemory();
 				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 				mainDialog.setNextImageButtonEnabled(manager.hasNext());
 				mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
 				this.loadingDialog.hideDialog();
-
 				refreshRoiGUI();
+                System.gc();
 			});
 			t.start();
 			this.loadingDialog.showDialog();
@@ -208,8 +207,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 			// Timeout is necessary to ensure that the loadingDialog is shown
 			Utilities.setTimeout(() -> {
-				VirtualStack virtualStack = null;
-				ImagePlus transformedImagesStack = null;
+				VirtualStack virtualStack;
+				ImagePlus transformedImagesStack;
 				if(event.isKeepOriginal()) {
 					// MAX IMAGE SIZE SEARCH AND SOURCE IMG SELECTION
 					// search for the maximum size of the images and the index of the image with the maximum width
@@ -311,6 +310,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					virtualStack = new VirtualStack(sourceImg.getWidth(), sourceImg.getHeight(), ColorModel.getRGBdefault(), IJ.getDir("temp"));
 					addToVirtualStack(sourceImg, virtualStack);
 					for(int i=1; i < manager.getNImages(); i++) {
+					    System.gc();
 						ImagePlus img = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
 						addToVirtualStack(img, virtualStack);
 					}
@@ -444,9 +444,9 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			new Thread(() -> {
 				WindowManager.setCurrentWindow(image.getWindow());
 				BufferedImage image = manager.get(event.getIndex());
-				IJ.freeMemory();
 				previewDialog.changeImage(image, "Preview Image " + (event.getIndex()+1) + "/" + manager.getNImages());
 				this.loadingDialog.hideDialog();
+				System.gc();
 			}).start();
 			this.loadingDialog.showDialog();
 		}
@@ -530,6 +530,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
                 mainDialog.setNextImageButtonEnabled(manager.hasNext());
                 mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
                 this.refreshRoiGUI();
+				 System.gc();
             }
 		}
 	}
@@ -646,7 +647,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 		if(this.removeImageDialog != null)
 			this.removeImageDialog.dispose();
 		this.manager.dispose();
-		IJ.freeMemory();
+		System.gc();
 		TotalMemory = 0;
 	}
 

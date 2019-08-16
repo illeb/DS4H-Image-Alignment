@@ -26,20 +26,18 @@ public class ImageFile {
     private Dimension editorImageDimension;
     private BufferedImageReader bufferedEditorImageReader;
     private ImportProcess importProcess;
-    public ImageFile(String pathFile) {
+    public ImageFile(String pathFile) throws IOException, FormatException {
         this.pathFile = pathFile;
         this.roiManagers = new ArrayList<>();
+        generateImageReader();
     }
 
-    public void generateImageReader() throws FormatException, IOException, BufferedImagesManager.ImageOversizeException {
+    private void generateImageReader() throws FormatException, IOException {
         this.importProcess = getImageImportingProcess(pathFile);
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         imageReader.setId(pathFile);
-        // final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
-            /*if(imageReader.getSeriesCount() <= 1)
-                throw new BufferedImagesManager.ImageOversizeException();*/
 
             // Cycles all the avaiable series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
@@ -49,10 +47,6 @@ public class ImageFile {
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
             }
-
-            // after all cycles, if we did not found an alternative series of sustainable size, throw an error
-            /*if(!this.reducedImageMode)
-                throw new BufferedImagesManager.ImageOversizeException();*/
         }
 
         this.editorImageDimension = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
@@ -72,9 +66,7 @@ public class ImageFile {
             if(virtualStack == null) {
                 try {
                     getWholeSlideImage();
-                } catch (DependencyException e) {
-                    e.printStackTrace();
-                } catch (ServiceException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -89,22 +81,12 @@ public class ImageFile {
     }
 
     ImagePlus virtualStack = null;
-    private void getWholeSlideImage() throws IOException, FormatException, DependencyException, ServiceException {
-
-        ImporterOptions options = new ImporterOptions();
-        options.loadOptions();
-        options.setVirtual(true);
-        options.setId(pathFile);
-        options.setSplitChannels(false);
-        options.setSeriesOn(0, true);
-        ImportProcess process = new ImportProcess(options);
-
-        DisplayHandler displayHandler = new DisplayHandler(process);
+    private void getWholeSlideImage() throws IOException, FormatException{
+        DisplayHandler displayHandler = new DisplayHandler(importProcess);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
-        process.execute();
-        ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStack = readPixels(reader, process.getOptions(), displayHandler)[0];
+        ImagePlusReader reader = new ImagePlusReader(importProcess);
+        virtualStack = readPixels(reader, importProcess.getOptions(), displayHandler)[0];
         new ImageConverter(virtualStack).convertToRGB();
     }
 
@@ -122,24 +104,16 @@ public class ImageFile {
     }
 
     public static long estimateMemoryUsage(String pathFile) throws IOException, FormatException {
-        ImporterOptions options = new ImporterOptions();
-        options.loadOptions();
-        options.setVirtual(false);
-        options.setId(pathFile);
-        options.setSplitChannels(false);
-        options.setSeriesOn(0, true);
-        ImportProcess process = new ImportProcess(options);
-        process.execute();
-        return process.getMemoryUsage() * 3;
+        return getImageImportingProcess(pathFile).getMemoryUsage();
     }
 
-    private ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
+    private static ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
         ImporterOptions options = new ImporterOptions();
         options.loadOptions();
-        options.setVirtual(false);
+        options.setVirtual(true);
         options.setId(pathFile);
         options.setSplitChannels(false);
-        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
+        options.setColorMode(ImporterOptions.COLOR_MODE_DEFAULT);
         options.setSeriesOn(0, true);
         ImportProcess process = new ImportProcess(options);
         process.execute();

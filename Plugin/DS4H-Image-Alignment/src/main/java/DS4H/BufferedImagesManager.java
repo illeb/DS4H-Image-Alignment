@@ -22,7 +22,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     public void addFile(String pathFile) throws IOException, FormatException, ImageOversizeException {
         ImageFile imageFile = new ImageFile(pathFile);
-        imageFile.generateImageReader();
         this.imageFiles.add(imageFile);
     }
 

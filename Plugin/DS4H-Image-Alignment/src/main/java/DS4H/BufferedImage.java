@@ -11,7 +11,6 @@ import java.util.Arrays;
 
 /**
  * Class that represents an image inside the DH4S alignment program.
- * NOTE: this class suffers of poor OOP design: i don't have simply the time to do as it should be done (e.g. why "wholeSlideImagePath" exists if the image it's not a whole slide image?).
  */
 public class BufferedImage extends ImagePlus {
     private RoiManager manager;
