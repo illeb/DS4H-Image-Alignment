@@ -25,6 +25,7 @@ public class ImageFile {
 
     private Dimension editorImageDimension;
     private BufferedImageReader bufferedEditorImageReader;
+    private BufferedImageReader bufferedEditorImageReaderWholeSlide;
     private ImportProcess importProcess;
     public ImageFile(String pathFile) throws IOException, FormatException {
         this.pathFile = pathFile;
@@ -39,7 +40,7 @@ public class ImageFile {
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
 
-            // Cycles all the avaiable series in search of an image with sustainable size
+            // Cycles all the available series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
                 imageReader.setSeries(i);
                 over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
@@ -70,8 +71,8 @@ public class ImageFile {
                     e.printStackTrace();
                 }
             }
-            virtualStack.setZ(index + 1);
-            return new BufferedImage("", new ImagePlus("", virtualStack.getProcessor()).getImage(), roiManagers.get(index),  this.editorImageDimension);
+          //  virtualStack.setZ(index + 1);
+            return new BufferedImage("", bufferedEditorImageReaderWholeSlide.openImage(index), roiManagers.get(index),  this.editorImageDimension);
         }
     }
 
@@ -81,13 +82,15 @@ public class ImageFile {
     }
 
     ImagePlus virtualStack = null;
-    private void getWholeSlideImage() throws IOException, FormatException{
+    private void getWholeSlideImage() throws IOException, FormatException {
         DisplayHandler displayHandler = new DisplayHandler(importProcess);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
-        ImagePlusReader reader = new ImagePlusReader(importProcess);
-        virtualStack = readPixels(reader, importProcess.getOptions(), displayHandler)[0];
-        new ImageConverter(virtualStack).convertToRGB();
+        // ImagePlusReader reader = new ImagePlusReader(importProcess);
+        this.bufferedEditorImageReaderWholeSlide = BufferedImageReader.makeBufferedImageReader(importProcess.getReader());
+        this.bufferedEditorImageReaderWholeSlide.setSeries(0);
+        // virtualStack = reader.openImagePlus()[0];
+        // new ImageConverter(virtualStack).convertToRGB();
     }
 
     public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
