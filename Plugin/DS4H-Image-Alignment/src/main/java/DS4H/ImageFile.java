@@ -27,6 +27,7 @@ public class ImageFile {
     private BufferedImageReader bufferedEditorImageReader;
     private BufferedImageReader bufferedEditorImageReaderWholeSlide;
     private ImportProcess importProcess;
+    private boolean wholeSlideInitialized = false;
     public ImageFile(String pathFile) throws IOException, FormatException {
         this.pathFile = pathFile;
         this.roiManagers = new ArrayList<>();
@@ -64,14 +65,13 @@ public class ImageFile {
         if(!wholeSlide)
             return new BufferedImage("", bufferedEditorImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
-            if(virtualStack == null) {
+            if(!wholeSlideInitialized) {
                 try {
                     getWholeSlideImage();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-          //  virtualStack.setZ(index + 1);
             return new BufferedImage("", bufferedEditorImageReaderWholeSlide.openImage(index), roiManagers.get(index),  this.editorImageDimension);
         }
     }
@@ -81,25 +81,18 @@ public class ImageFile {
         roiManagers.forEach(Window::dispose);
     }
 
-    ImagePlus virtualStack = null;
     private void getWholeSlideImage() throws IOException, FormatException {
+        this.wholeSlideInitialized = true;
+        // If the bufferedImageReader is already using the first series (thus the images with the biggest sizes) there is no need to initialize a new bufferedImageReader. We can just reuse it as it is
+        if (bufferedEditorImageReader.getSeries() == 0) {
+            this.bufferedEditorImageReaderWholeSlide = bufferedEditorImageReader;
+            return;
+        }
         DisplayHandler displayHandler = new DisplayHandler(importProcess);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
-        // ImagePlusReader reader = new ImagePlusReader(importProcess);
         this.bufferedEditorImageReaderWholeSlide = BufferedImageReader.makeBufferedImageReader(importProcess.getReader());
         this.bufferedEditorImageReaderWholeSlide.setSeries(0);
-        // virtualStack = reader.openImagePlus()[0];
-        // new ImageConverter(virtualStack).convertToRGB();
-    }
-
-    public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
-                                  DisplayHandler displayHandler) throws FormatException, IOException
-    {
-        if (options.isViewNone()) return null;
-        if (!options.isQuiet()) reader.addStatusListener(displayHandler);
-        ImagePlus[] imps = reader.openImagePlus();
-        return imps;
     }
 
     public List<RoiManager> getRoiManagers() {
