@@ -97,7 +97,10 @@ public class MainDialog extends ImageWindow {
         trainingConstraints.gridy = 0;
         cornersJPanel.setLayout(trainingLayout);
 
-        cornersJPanel.add(new JLabel("Press \"C\" to add a corner point"), trainingConstraints);
+
+        JLabel lbl = new JLabel("Press \"C\" to add a corner point");
+        lbl.setForeground(Color.gray);
+        cornersJPanel.add(lbl, trainingConstraints);
         trainingConstraints.gridy++;
         trainingConstraints.gridy++;
         lst_rois = new JList<>();
@@ -125,9 +128,13 @@ public class MainDialog extends ImageWindow {
         actionsConstraints.fill = GridBagConstraints.HORIZONTAL;
         actionsConstraints.weightx = 1;
         actionsConstraints.gridx = 0;
+
         actionsConstraints.insets = new Insets(5, 5, 6, 6);
         actionsJPanel.setLayout(actionsLayout);
 
+        lbl = new JLabel("Press \"A\" or \"D\" to change image", JLabel.LEFT);
+        lbl.setForeground(Color.gray);
+        actionsJPanel.add(lbl, actionsConstraints);
         actionsJPanel.add(chk_showPreview, actionsConstraints);
         actionsJPanel.add(btn_deleteRoi, actionsConstraints);
         actionsJPanel.add(btn_prevImage, actionsConstraints);

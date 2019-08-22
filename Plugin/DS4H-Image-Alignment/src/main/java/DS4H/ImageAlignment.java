@@ -63,7 +63,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	private List<String> tempImages = new ArrayList<>();
 	private boolean alignedImageSaved = false;
 
-	static private String IMAGES_CROPPED_MESSAGE = "Image size too large: image has been cropped for compatibility.";
+	static private String IMAGES_SCALED_MESSAGE = "Image size too large: image has been scaled for compatibility.";
 	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: align operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String ALIGNED_IMAGE_NOT_SAVED_MESSAGE = "Aligned images not saved: are you sure you want to exit without saving?";
@@ -72,6 +72,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
 	static private String UNKNOWN_FORMAT_MESSAGE = "Error: trying to open a file with a unsupported format.";
+	static private String IMAGE_SIZE_TOO_BIG = "During computation the expected file size overcame imagej file limit. To continue, deselect \"keep all pixel data\" option.";
 	static private long TotalMemory = 0;
 	public static void main(final String... args) {
 		ImageJ ij = new ImageJ();
@@ -257,6 +258,12 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					// Calculate the final stack size. It is calculated as maximumImageSize + maximum offset in respect of the source image
 					finalStackDimension.width = finalStackDimension.width + maxOffsetX;
 					finalStackDimension.height += sourceImg.getHeight() == maximumSize.height ? maxOffsetY : 0;
+
+					// The final stack of the image is exceeding the maximum size of the images for imagej (see http://imagej.1557.x6.nabble.com/Large-image-td5015380.html)
+					if (finalStackDimension.width * finalStackDimension.height > Integer.MAX_VALUE){
+                        JOptionPane.showMessageDialog(null, IMAGE_SIZE_TOO_BIG, "Error: image size too big", JOptionPane.ERROR_MESSAGE);
+					    return;
+                    }
 
 					ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
 					processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
@@ -600,7 +607,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 			this.loadingDialog.hideDialog();
 			if(image.isReduced())
-				JOptionPane.showMessageDialog(null, IMAGES_CROPPED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, IMAGES_SCALED_MESSAGE, "Info", JOptionPane.INFORMATION_MESSAGE);
 			if(manager.getNImages() == 1)
 				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 			complete = true;
