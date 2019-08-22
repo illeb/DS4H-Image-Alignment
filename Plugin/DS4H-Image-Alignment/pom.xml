@@ -14,11 +14,11 @@
 
 	<groupId>DS4H-Image-Alignment</groupId>
 	<artifactId>DS4H-Image-Alignment</artifactId>
-	<version>1.0.1</version>
+	<version>1.0.4</version>
 
 	<name>DS4H Image Alignment plugin</name>
 	<description>DS4H Image Alignment plugin for medical research</description>
-	<url>https://github.com/Luxor001/Imagej-plugin</url>
+	<url>https://github.com/Luxor001/DS4H-Image-Alignment/</url>
 	<inceptionYear>2019</inceptionYear>
 	<organization>
 		<name>Stefano Belli</name>
@@ -26,8 +26,8 @@
 	</organization>
 	<licenses>
 		<license>
-			<name>CC0 1.0 Universal License</name>
-			<url>http://creativecommons.org/publicdomain/zero/1.0/</url>
+			<name>CGNU GENERAL PUBLIC LICENSE V. 3.0</name>
+			<url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -36,7 +36,7 @@
 		<developer>
 			<id>https://github.com/Luxor001</id>
 			<name>Stefano Belli</name>
-			<url>https://imagej.net/User:[MY-IMAGEJ-WIKI-ACCOUNT]</url>
+			<url>https://imagej.net/User:DS4H</url>
 		</developer>
 	</developers>
 	<contributors>
@@ -53,14 +53,14 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/Luxor001/Imagej-plugin/</connection>
+		<connection>scm:git:https://github.com/Luxor001/DS4H-Image-Alignment/</connection>
 		<developerConnection>scm:git:git@github.com:[MY-ORG]/[MY-REPO]</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/Luxor001/Imagej-plugin/</url>
+		<url>https://github.com/Luxor001/DS4H-Image-Alignment/</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>http://github.com/Luxor001/Imagej-plugin//issues</url>
+		<url>https://github.com/Luxor001/DS4H-Image-Alignment/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>

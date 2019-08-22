@@ -5,24 +5,17 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageConverter;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
-import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
-import loci.formats.in.MetadataLevel;
-import loci.formats.services.OMEXMLService;
 import loci.plugins.in.DisplayHandler;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
-import loci.plugins.util.LociPrefs;
-
 import java.awt.*;
-import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class ImageFile {
@@ -32,23 +25,23 @@ public class ImageFile {
 
     private Dimension editorImageDimension;
     private BufferedImageReader bufferedEditorImageReader;
+    private BufferedImageReader bufferedEditorImageReaderWholeSlide;
     private ImportProcess importProcess;
-    public ImageFile(String pathFile) {
+    private boolean wholeSlideInitialized = false;
+    public ImageFile(String pathFile) throws IOException, FormatException {
         this.pathFile = pathFile;
         this.roiManagers = new ArrayList<>();
+        generateImageReader();
     }
 
-    public void generateImageReader() throws FormatException, IOException, BufferedImagesManager.ImageOversizeException {
+    private void generateImageReader() throws FormatException, IOException {
         this.importProcess = getImageImportingProcess(pathFile);
         final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         imageReader.setId(pathFile);
-        // final IFormatReader imageReader = new ImageReader(ImageReader.getDefaultReaderClasses());
         boolean over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
         if(over2GBLimit) {
-            /*if(imageReader.getSeriesCount() <= 1)
-                throw new BufferedImagesManager.ImageOversizeException();*/
 
-            // Cycles all the avaiable series in search of an image with sustainable size
+            // Cycles all the available series in search of an image with sustainable size
             for (int i = 0; i < imageReader.getSeriesCount() && !this.reducedImageMode; i++) {
                 imageReader.setSeries(i);
                 over2GBLimit = (long)imageReader.getSizeX() * (long)imageReader.getSizeY() * imageReader.getRGBChannelCount() > Integer.MAX_VALUE / 3;
@@ -56,10 +49,6 @@ public class ImageFile {
                 if(!over2GBLimit)
                     this.reducedImageMode = true;
             }
-
-            // after all cycles, if we did not found an alternative series of sustainable size, throw an error
-            /*if(!this.reducedImageMode)
-                throw new BufferedImagesManager.ImageOversizeException();*/
         }
 
         this.editorImageDimension = new Dimension(imageReader.getSizeX(),imageReader.getSizeY());
@@ -76,17 +65,14 @@ public class ImageFile {
         if(!wholeSlide)
             return new BufferedImage("", bufferedEditorImageReader.openImage(index), roiManagers.get(index), reducedImageMode);
         else{
-            if(virtualStack == null) {
+            if(!wholeSlideInitialized) {
                 try {
                     getWholeSlideImage();
-                } catch (DependencyException e) {
-                    e.printStackTrace();
-                } catch (ServiceException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-            virtualStack.setZ(index + 1);
-            return new BufferedImage("", new ImagePlus("", virtualStack.getProcessor()).getImage(), roiManagers.get(index),  this.editorImageDimension);
+            return new BufferedImage("", bufferedEditorImageReaderWholeSlide.openImage(index), roiManagers.get(index),  this.editorImageDimension);
         }
     }
 
@@ -95,33 +81,18 @@ public class ImageFile {
         roiManagers.forEach(Window::dispose);
     }
 
-    ImagePlus virtualStack = null;
-    private void getWholeSlideImage() throws IOException, FormatException, DependencyException, ServiceException {
-
-        ImporterOptions options = new ImporterOptions();
-        options.loadOptions();
-        options.setVirtual(true);
-        options.setId(pathFile);
-        options.setSplitChannels(false);
-        options.setSeriesOn(0, true);
-        ImportProcess process = new ImportProcess(options);
-
-        DisplayHandler displayHandler = new DisplayHandler(process);
+    private void getWholeSlideImage() throws IOException, FormatException {
+        this.wholeSlideInitialized = true;
+        // If the bufferedImageReader is already using the first series (thus the images with the biggest sizes) there is no need to initialize a new bufferedImageReader. We can just reuse it as it is
+        if (bufferedEditorImageReader.getSeries() == 0) {
+            this.bufferedEditorImageReaderWholeSlide = bufferedEditorImageReader;
+            return;
+        }
+        DisplayHandler displayHandler = new DisplayHandler(importProcess);
         displayHandler.displayOriginalMetadata();
         displayHandler.displayOMEXML();
-        process.execute();
-        ImagePlusReader reader = new ImagePlusReader(process);
-        virtualStack = readPixels(reader, process.getOptions(), displayHandler)[0];
-        new ImageConverter(virtualStack).convertToRGB();
-    }
-
-    public ImagePlus[] readPixels(ImagePlusReader reader, ImporterOptions options,
-                                  DisplayHandler displayHandler) throws FormatException, IOException
-    {
-        if (options.isViewNone()) return null;
-        if (!options.isQuiet()) reader.addStatusListener(displayHandler);
-        ImagePlus[] imps = reader.openImagePlus();
-        return imps;
+        this.bufferedEditorImageReaderWholeSlide = BufferedImageReader.makeBufferedImageReader(importProcess.getReader());
+        this.bufferedEditorImageReaderWholeSlide.setSeries(0);
     }
 
     public List<RoiManager> getRoiManagers() {
@@ -129,24 +100,16 @@ public class ImageFile {
     }
 
     public static long estimateMemoryUsage(String pathFile) throws IOException, FormatException {
-        ImporterOptions options = new ImporterOptions();
-        options.loadOptions();
-        options.setVirtual(false);
-        options.setId(pathFile);
-        options.setSplitChannels(false);
-        options.setSeriesOn(0, true);
-        ImportProcess process = new ImportProcess(options);
-        process.execute();
-        return process.getMemoryUsage() * 3;
+        return getImageImportingProcess(pathFile).getMemoryUsage();
     }
 
-    private ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
+    private static ImportProcess getImageImportingProcess(String pathFile) throws IOException, FormatException {
         ImporterOptions options = new ImporterOptions();
         options.loadOptions();
-        options.setVirtual(false);
+        options.setVirtual(true);
         options.setId(pathFile);
         options.setSplitChannels(false);
-        options.setColorMode(ImporterOptions.COLOR_MODE_COMPOSITE);
+        options.setColorMode(ImporterOptions.COLOR_MODE_DEFAULT);
         options.setSeriesOn(0, true);
         ImportProcess process = new ImportProcess(options);
         process.execute();
@@ -176,16 +139,19 @@ public class ImageFile {
         return dimensions;
     }
 
-    public Raster getThumbs() {
-        Raster image = null;
+    private List<java.awt.image.BufferedImage> cached_thumbs;
+    public List<java.awt.image.BufferedImage> getThumbs() {
         try {
-            image= this.bufferedEditorImageReader.openThumbImage(0).getData();
-        } catch (FormatException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            // lazy initialization
+            if(this.cached_thumbs == null) {
+                this.cached_thumbs = new ArrayList<>();
+                for (int i = 0; i < bufferedEditorImageReader.getImageCount(); i++)
+                    cached_thumbs.add(this.bufferedEditorImageReader.openThumbImage(i));
+            }
+        } catch (FormatException | IOException e) {
             e.printStackTrace();
         }
-        return image;
+        return cached_thumbs;
     }
 
     public String getPathFile() {

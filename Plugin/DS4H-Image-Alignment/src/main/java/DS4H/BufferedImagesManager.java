@@ -22,7 +22,6 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
 
     public void addFile(String pathFile) throws IOException, FormatException, ImageOversizeException {
         ImageFile imageFile = new ImageFile(pathFile);
-        imageFile.generateImageReader();
         this.imageFiles.add(imageFile);
     }
 
@@ -152,5 +151,15 @@ public class BufferedImagesManager implements ListIterator<ImagePlus>{
     public List<ImageFile> getImageFiles() {
         return this.imageFiles;
     }
+
+    /**
+     * Remove the imageFile from the manager and updates the image index
+     * @param index
+     */
+    public void removeImageFile(int index) {
+        this.imageFiles.remove(index);
+        this.imageIndex = this.imageIndex >= this.getNImages() ? index - 1 : index;
+    }
+
     public static class ImageOversizeException extends Exception { }
 }
