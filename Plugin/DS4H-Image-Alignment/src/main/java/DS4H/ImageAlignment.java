@@ -1,20 +1,20 @@
 package DS4H;
 
-import DS4H.maindialog.MainDialog;
-import DS4H.aligndialog.AlignDialog;
-import DS4H.aligndialog.OnAlignDialogEventListener;
-import DS4H.aligndialog.event.IAlignDialogEvent;
-import DS4H.aligndialog.event.ReuseImageEvent;
-import DS4H.aligndialog.event.SaveEvent;
-import DS4H.previewdialog.OnPreviewDialogEventListener;
-import DS4H.previewdialog.PreviewDialog;
-import DS4H.maindialog.OnMainDialogEventListener;
-import DS4H.maindialog.event.*;
-import DS4H.previewdialog.event.CloseDialogEvent;
-import DS4H.previewdialog.event.IPreviewDialogEvent;
-import DS4H.removedialog.OnRemoveDialogEventListener;
-import DS4H.removedialog.RemoveImageDialog;
-import DS4H.removedialog.event.IRemoveDialogEvent;
+import DS4H.MainDialog.MainDialog;
+import DS4H.AlignDialog.AlignDialog;
+import DS4H.AlignDialog.OnAlignDialogEventListener;
+import DS4H.AlignDialog.event.IAlignDialogEvent;
+import DS4H.AlignDialog.event.ReuseImageEvent;
+import DS4H.AlignDialog.event.SaveEvent;
+import DS4H.PreviewDialog.OnPreviewDialogEventListener;
+import DS4H.PreviewDialog.PreviewDialog;
+import DS4H.MainDialog.OnMainDialogEventListener;
+import DS4H.MainDialog.event.*;
+import DS4H.PreviewDialog.event.CloseDialogEvent;
+import DS4H.PreviewDialog.event.IPreviewDialogEvent;
+import DS4H.RemoveDialog.OnRemoveDialogEventListener;
+import DS4H.RemoveDialog.RemoveImageDialog;
+import DS4H.RemoveDialog.event.IRemoveDialogEvent;
 import ij.*;
 import ij.gui.*;
 
@@ -25,9 +25,6 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import loci.formats.UnknownFormatException;
-import loci.plugins.in.ImagePlusReader;
-import net.imagej.ops.Op;
-import net.imagej.ops.OpEnvironment;
 import org.scijava.AbstractContextual;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
@@ -45,13 +42,11 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-/** Loads and displays a dataset using the ImageJ API. */
 @Plugin(type = Command.class, headless = true,
 		menuPath = "Plugins>Registration>DSH4 Image Alignment")
-public class ImageAlignment extends AbstractContextual implements Op, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener, OnRemoveDialogEventListener {
-	private BufferedImagesManager manager;
+public class ImageAlignment extends AbstractContextual implements Command, OnMainDialogEventListener, OnPreviewDialogEventListener, OnAlignDialogEventListener, OnRemoveDialogEventListener {
+	private ImagesManager manager;
 	private BufferedImage image = null;
 	private MainDialog mainDialog;
 	private PreviewDialog previewDialog;
@@ -97,16 +92,6 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				} catch (IOException e) { }
 			});
 		}));
-	}
-
-	@Override
-	public OpEnvironment ops() {
-		return null;
-	}
-
-	@Override
-	public void setEnvironment(OpEnvironment ops) {
-
 	}
 
 	@Override
@@ -260,8 +245,9 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 					finalStackDimension.height += sourceImg.getHeight() == maximumSize.height ? maxOffsetY : 0;
 
 					// The final stack of the image is exceeding the maximum size of the images for imagej (see http://imagej.1557.x6.nabble.com/Large-image-td5015380.html)
-					if (finalStackDimension.width * finalStackDimension.height > Integer.MAX_VALUE){
+					if (((double)finalStackDimension.width * finalStackDimension.height) > Integer.MAX_VALUE){
                         JOptionPane.showMessageDialog(null, IMAGE_SIZE_TOO_BIG, "Error: image size too big", JOptionPane.ERROR_MESSAGE);
+						loadingDialog.hideDialog();
 					    return;
                     }
 
@@ -446,8 +432,8 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 	@Override
 	public void onPreviewDialogEvent(IPreviewDialogEvent dialogEvent) {
-		if(dialogEvent instanceof DS4H.previewdialog.event.ChangeImageEvent) {
-			DS4H.previewdialog.event.ChangeImageEvent event = (DS4H.previewdialog.event.ChangeImageEvent)dialogEvent;
+		if(dialogEvent instanceof DS4H.PreviewDialog.event.ChangeImageEvent) {
+			DS4H.PreviewDialog.event.ChangeImageEvent event = (DS4H.PreviewDialog.event.ChangeImageEvent)dialogEvent;
 			new Thread(() -> {
 				WindowManager.setCurrentWindow(image.getWindow());
 				BufferedImage image = manager.get(event.getIndex());
@@ -485,7 +471,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 			this.initialize(tempImages.get(tempImages.size()-1));
 		}
 
-		if(dialogEvent instanceof DS4H.aligndialog.event.ExitEvent) {
+		if(dialogEvent instanceof DS4H.AlignDialog.event.ExitEvent) {
 			if(!alignedImageSaved) {
 				String[] buttons = { "Yes", "No"};
 				int answer = JOptionPane.showOptionDialog(null, ALIGNED_IMAGE_NOT_SAVED_MESSAGE, "Careful now",
@@ -500,13 +486,13 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 
 	@Override
 	public void onRemoveDialogEvent(IRemoveDialogEvent removeEvent) {
-		if(removeEvent instanceof DS4H.removedialog.event.ExitEvent) {
+		if(removeEvent instanceof DS4H.RemoveDialog.event.ExitEvent) {
 			removeImageDialog.setVisible(false);
 			removeImageDialog.dispose();
 		}
 
-		if(removeEvent instanceof DS4H.removedialog.event.RemoveImageEvent) {
-			int imageFileIndex = ((DS4H.removedialog.event.RemoveImageEvent)removeEvent).getImageFileIndex();
+		if(removeEvent instanceof DS4H.RemoveDialog.event.RemoveImageEvent) {
+			int imageFileIndex = ((DS4H.RemoveDialog.event.RemoveImageEvent)removeEvent).getImageFileIndex();
 
             // only a image is available: if user remove this image we need to ask him to choose another one!
 			if(this.manager.getImageFiles().size() == 1) {
@@ -543,7 +529,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 	}
 
 	/**
-	 * Refresh all the Roi-based guis in the maindialog
+	 * Refresh all the Roi-based guis in the MainDialog
 	 */
 	private void refreshRoiGUI() {
 
@@ -595,7 +581,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				loadingDialog.hideDialog();
 				JOptionPane.showMessageDialog(null, UNKNOWN_FORMAT_MESSAGE, "Error: unknown format", JOptionPane.ERROR_MESSAGE);
 			}
-			manager = new BufferedImagesManager(pathFile);
+			manager = new ImagesManager(pathFile);
 			image = manager.next();
 			mainDialog = new MainDialog(image, this);
 			mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
@@ -612,7 +598,7 @@ public class ImageAlignment extends AbstractContextual implements Op, OnMainDial
 				JOptionPane.showMessageDialog(null, SINGLE_IMAGE_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
 			complete = true;
 		}
-		catch (BufferedImagesManager.ImageOversizeException e) {
+		catch (ImagesManager.ImageOversizeException e) {
 			JOptionPane.showMessageDialog(null, IMAGES_OVERSIZE_MESSAGE);
 		}
 		catch(UnknownFormatException e){
