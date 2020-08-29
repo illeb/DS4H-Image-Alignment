@@ -5,6 +5,7 @@ import DS4H.MainDialog.CustomCanvas;
 import DS4H.PreviewDialog.event.ChangeImageEvent;
 import DS4H.PreviewDialog.event.CloseDialogEvent;
 import ij.IJ;
+import ij.Prefs;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
 import ij.gui.Roi;
@@ -13,6 +14,7 @@ import ij.plugin.Zoom;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Arrays;
 
 public class PreviewDialog extends ImageWindow {
 
@@ -101,14 +103,16 @@ public class PreviewDialog extends ImageWindow {
     }
 
     public void drawRois() {
-        Overlay overlay = new Overlay();
-		for (int i = overlay.size(); i > 0; i--)
-			overlay.remove(i);
-		for(Roi roi : this.currentImage.getManager().getRoisAsArray()) {
-			Roi newROi = new Roi(roi.getXBase(), roi.getYBase(), roi.getFloatWidth(), roi.getFloatHeight());
-			newROi.setStrokeColor(roi.getStrokeColor());
-			overlay.add(roi);
-		}
-		this.getImagePlus().setOverlay(overlay);
+        Overlay over = new Overlay();
+        over.drawBackgrounds(false);
+        over.drawLabels(false);
+        over.drawNames(true);
+        over.setLabelColor(Color.BLUE);
+        over.setStrokeColor(Color.BLUE);
+        int strokeWidth = (int) (this.currentImage.getWidth() * 0.0025) > 3 ? (int) (this.currentImage.getWidth() * 0.0025) : 3;
+        Arrays.stream(this.currentImage.getManager().getRoisAsArray()).forEach(roi -> over.add(roi));
+        over.setLabelFontSize(Math.round(strokeWidth * 3.33f), "scale");
+        over.setStrokeWidth((double)strokeWidth);
+		this.getImagePlus().setOverlay(over);
     }
 }

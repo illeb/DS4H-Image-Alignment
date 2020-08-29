@@ -1,6 +1,8 @@
 package DS4H.RemoveDialog;
 
 import DS4H.ImageFile;
+import DS4H.RemoveDialog.event.ExitEvent;
+import DS4H.RemoveDialog.event.RemoveImageEvent;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -25,7 +27,7 @@ public class RemoveImageDialog extends JDialog {
         this.setResizable(false);
         this.setTitle("Remove image");
 
-         model = new DefaultListModel<>();
+        model = new DefaultListModel<>();
         imageFiles.forEach(model::addElement);
 
         lst_images = new JList<>(model);
@@ -40,8 +42,8 @@ public class RemoveImageDialog extends JDialog {
         this.pack();
         this.getInsets().set(100, 100, 100, 100);
 
-        this.btn_delete.addActionListener(e -> listener.onRemoveDialogEvent(new DS4H.RemoveDialog.event.RemoveImageEvent(lst_images.getSelectedIndex())));
-        this.btn_close.addActionListener(e -> listener.onRemoveDialogEvent(new DS4H.RemoveDialog.event.ExitEvent()));
+        this.btn_delete.addActionListener(e -> listener.onRemoveDialogEvent(new RemoveImageEvent(lst_images.getSelectedIndex())));
+        this.btn_close.addActionListener(e -> listener.onRemoveDialogEvent(new ExitEvent()));
     }
 
 
