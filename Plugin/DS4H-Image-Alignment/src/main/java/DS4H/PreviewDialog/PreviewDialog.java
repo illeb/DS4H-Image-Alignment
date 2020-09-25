@@ -1,14 +1,12 @@
 package DS4H.PreviewDialog;
 
-import DS4H.BufferedImage;
+import DS4H.BufferedImage.BufferedImage;
 import DS4H.MainDialog.CustomCanvas;
 import DS4H.PreviewDialog.event.ChangeImageEvent;
 import DS4H.PreviewDialog.event.CloseDialogEvent;
 import ij.IJ;
-import ij.Prefs;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
-import ij.gui.Roi;
 import ij.plugin.Zoom;
 
 import javax.swing.*;
@@ -111,7 +109,7 @@ public class PreviewDialog extends ImageWindow {
         over.setStrokeColor(Color.BLUE);
         int strokeWidth = (int) (this.currentImage.getWidth() * 0.0025) > 3 ? (int) (this.currentImage.getWidth() * 0.0025) : 3;
         Arrays.stream(this.currentImage.getManager().getRoisAsArray()).forEach(roi -> over.add(roi));
-        over.setLabelFontSize(Math.round(strokeWidth * 3.33f), "scale");
+        over.setLabelFontSize(Math.round(strokeWidth * 1f), "scale");
         over.setStrokeWidth((double)strokeWidth);
 		this.getImagePlus().setOverlay(over);
     }

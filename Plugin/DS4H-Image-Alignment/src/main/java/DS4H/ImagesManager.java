@@ -1,5 +1,6 @@
 package DS4H;
 
+import DS4H.BufferedImage.BufferedImage;
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
 import loci.formats.FormatException;

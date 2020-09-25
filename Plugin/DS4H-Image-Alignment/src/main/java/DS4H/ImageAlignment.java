@@ -1,5 +1,6 @@
 package DS4H;
 
+import DS4H.BufferedImage.BufferedImage;
 import DS4H.MainDialog.MainDialog;
 import DS4H.AlignDialog.AlignDialog;
 import DS4H.AlignDialog.OnAlignDialogEventListener;
@@ -23,9 +24,7 @@ import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.plugin.frame.RoiManager;
 import ij.process.ColorProcessor;
-import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
-import javafx.scene.shape.Circle;
 import loci.formats.UnknownFormatException;
 import org.scijava.AbstractContextual;
 import org.scijava.command.Command;
@@ -35,7 +34,6 @@ import net.imagej.ImageJ;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
 import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
@@ -120,6 +118,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 		}
 
 		if(dialogEvent instanceof ChangeImageEvent) {
+			image.removeMouseListeners();
 			Thread t = new Thread(() -> {
 				ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 				if((event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT && !manager.hasNext()) ||
@@ -134,6 +133,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 				mainDialog.setNextImageButtonEnabled(manager.hasNext());
 				mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+				image.buildMouseListener();
 				this.loadingDialog.hideDialog();
 				refreshRoiGUI();
 				System.gc();
@@ -172,7 +172,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 			over.drawBackgrounds(false);
 			over.drawLabels(false);
 			over.drawNames(true);
-			over.setLabelFontSize(Math.round(strokeWidth * 3.33f), "scale");
+			over.setLabelFontSize(Math.round(strokeWidth * 1f), "scale");
 			over.setLabelColor(Color.BLUE);
 			over.setStrokeWidth((double)strokeWidth);
 			over.setStrokeColor(Color.BLUE);
@@ -181,6 +181,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 			Arrays.stream(image.getManager().getRoisAsArray()).forEach(roi -> over.add(roi));
 			over.add(outer);
 			image.getManager().setOverlay(over);
+			refreshRoiGUI();
 			refreshRoiGUI();
 		}
 
@@ -193,6 +194,11 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.drawRois();
+		}
+
+		if(dialogEvent instanceof SelectedRoiFromOvalEvent) {
+			SelectedRoiFromOvalEvent event = (SelectedRoiFromOvalEvent)dialogEvent;
+			mainDialog.lst_rois.setSelectedIndex(event.getRoiIndex());
 		}
 
 		if(dialogEvent instanceof DeselectedRoiEvent) {
@@ -419,6 +425,8 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 
 				if(roiPoints.stream().anyMatch(roiCoords-> roiCoords.x > image.getWidth() || roiCoords.y > image.getHeight()))
 					JOptionPane.showMessageDialog(null, ROI_NOT_ADDED_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
+
+				this.image.setCopyCornersMode();
 			}
 		}
 
