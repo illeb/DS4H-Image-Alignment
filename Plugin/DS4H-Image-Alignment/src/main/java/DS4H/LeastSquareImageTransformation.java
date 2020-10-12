@@ -1,10 +1,9 @@
 package DS4H;
 
+import DS4H.BufferedImage.BufferedImage;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.Overlay;
-import ij.gui.Roi;
 import ij.io.FileInfo;
 import ij.process.*;
 import mpicbg.ij.Mapping;
