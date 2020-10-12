@@ -1,9 +1,16 @@
 package DS4H.MainDialog;
 
-import DS4H.BufferedImage;
+import DS4H.BufferedImage.BufferedImage;
+import DS4H.BufferedImage.OnBufferedImageEventListener;
+import DS4H.BufferedImage.event.IBufferedImageEvent;
+import DS4H.BufferedImage.event.RoiSelectedEvent;
 import DS4H.MainDialog.event.*;
+import DS4H.Utilities;
 import ij.IJ;
+import ij.Prefs;
 import ij.gui.ImageWindow;
+import ij.gui.OvalRoi;
+import ij.gui.Overlay;
 import ij.gui.Roi;
 import ij.plugin.Zoom;
 import ij.plugin.frame.RoiManager;
@@ -22,7 +29,7 @@ public class MainDialog extends ImageWindow {
     private JPanel buttonsPanel = new JPanel();
 
     private JPanel cornersJPanel = new JPanel();
-    private JList<String> lst_rois;
+    public JList<String> lst_rois;
     private JButton btn_copyCorners;
 
     private JPanel actionsJPanel = new JPanel();
@@ -38,6 +45,8 @@ public class MainDialog extends ImageWindow {
     private JCheckBox chk_keepOriginal;
 
     private Panel all = new Panel();
+    public static BufferedImage currentImage = null;
+
 
     private DefaultListModel<String> lst_rois_model;
     private BufferedImage image;
@@ -248,16 +257,18 @@ public class MainDialog extends ImageWindow {
                 super.mouseExited(e);
             }
         });
+
         // Rois list handling
         lst_rois.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         lst_rois_model = new DefaultListModel<>();
         lst_rois.setModel(lst_rois_model);
+        MainDialog root = this;
         lst_rois.setSelectionModel(new DefaultListSelectionModel() {
             // Thanks to https://stackoverflow.com/a/31336378/1306679
             @Override
             public void setSelectionInterval(int startIndex, int endIndex) {
                 if (startIndex == endIndex) {
-                    if (multipleItemsCurrentlyAreSelected()) {
+                    /*if (multipleItemsCurrentlyArseSelected()) {
                         clearSelection();
                     }
                     if (isSelectedIndex(startIndex)) {
@@ -265,12 +276,12 @@ public class MainDialog extends ImageWindow {
                         eventListener.onMainDialogEvent(new DeselectedRoiEvent(startIndex));
                         btn_deleteRoi.setEnabled(false);
                     }
-                    else {
+                    else {*/
                         eventListener.onMainDialogEvent(new SelectedRoiEvent(startIndex));
                         btn_deleteRoi.setEnabled(true);
                         super.setSelectionInterval(startIndex, endIndex);
                     }
-                }
+               // }
             }
 
             private boolean multipleItemsCurrentlyAreSelected() {
@@ -310,8 +321,10 @@ public class MainDialog extends ImageWindow {
         menuItem.addActionListener(e -> eventListener.onMainDialogEvent(new OpenAboutEvent()));
         aboutMenu.add(menuItem);
 
+        MainDialog.currentImage = image;
         menuBar.add(fileMenu);
         menuBar.add(aboutMenu);
+        this.addEventListenerToImage();
         this.setMenuBar(menuBar);
         new Zoom().run("scale");
         pack();
@@ -322,6 +335,7 @@ public class MainDialog extends ImageWindow {
      * @param image
      */
     public void changeImage(BufferedImage image) {
+        MainDialog.currentImage = image;
         this.setImage(image);
         image.backupRois();
         image.getManager().reset();
@@ -330,7 +344,7 @@ public class MainDialog extends ImageWindow {
             btn_deleteRoi.setEnabled(false);
         this.image.restoreRois();
         this.drawRois(image.getManager());
-
+        this.addEventListenerToImage();
         // Let's call the zoom plugin to scale the image to fit in the user window
         // The zoom scaling command works on the current active window: to be 100% sure it will work, we need to forcefully select the preview window.
         IJ.selectWindow(this.getImagePlus().getID());
@@ -339,11 +353,42 @@ public class MainDialog extends ImageWindow {
     }
 
     /**
+     * Adds an event listener to the current image
+     */
+    private void addEventListenerToImage() {
+        MainDialog root = this;
+        this.image.addEventListener(event -> {
+            if(event instanceof RoiSelectedEvent) {
+                // if a roi is marked as selected, select the appropriate ROI in the listbox in the left of the window
+                RoiSelectedEvent roiSelectedEvent = (RoiSelectedEvent)event;
+                int index = Arrays.asList(root.image.getManager().getRoisAsArray()).indexOf(roiSelectedEvent.getRoiSelected());
+                eventListener.onMainDialogEvent(new SelectedRoiFromOvalEvent(index));
+            }
+        });
+    }
+
+    /**
      * Update the Roi List based on the given RoiManager istance
      * @param manager
      */
     public void drawRois(RoiManager manager) {
-        manager.runCommand("show all with labels");
+
+        Prefs.useNamesAsLabels = true;
+        Prefs.noPointLabels = false;
+        int strokeWidth = (int) (image.getWidth() * 0.0025) > 3 ? (int) (image.getWidth() * 0.0025) : 3;
+        int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? Toolkit.getDefaultToolkit().getScreenSize().width : image.getWidth() ;
+        roiWidth = (int)(roiWidth * 0.03);
+        Overlay over = new Overlay();
+        over.drawBackgrounds(false);
+        over.drawLabels(false);
+        over.drawNames(true);
+        over.setLabelFontSize(Math.round(strokeWidth * 1f), "scale");
+        over.setLabelColor(Color.BLUE);
+        over.setStrokeWidth((double)strokeWidth);
+        over.setStrokeColor(Color.BLUE);
+        Arrays.stream(image.getManager().getRoisAsArray()).forEach(roi -> over.add(roi));
+        image.getManager().setOverlay(over);
+
         this.refreshROIList(manager);
         if(lst_rois.getSelectedIndex() == -1)
             btn_deleteRoi.setEnabled(false);
@@ -376,6 +421,10 @@ public class MainDialog extends ImageWindow {
 
     public void setCopyCornersEnabled(boolean enabled) {
         this.btn_copyCorners.setEnabled(enabled);
+    }
+
+    public void setListSelectedIndex(int index) {
+        this.lst_rois.setSelectedIndex(index);
     }
 
     // a simple debounce variable that can put "on hold" a key_release event

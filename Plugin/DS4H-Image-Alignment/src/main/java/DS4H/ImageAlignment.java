@@ -1,5 +1,6 @@
 package DS4H;
 
+import DS4H.BufferedImage.BufferedImage;
 import DS4H.MainDialog.MainDialog;
 import DS4H.AlignDialog.AlignDialog;
 import DS4H.AlignDialog.OnAlignDialogEventListener;
@@ -62,7 +63,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 	static private String SINGLE_IMAGE_MESSAGE = "Only one image detected in the stack: align operation will be unavailable.";
 	static private String IMAGES_OVERSIZE_MESSAGE = "Cannot open the selected image: image exceed supported dimensions.";
 	static private String ALIGNED_IMAGE_NOT_SAVED_MESSAGE = "Aligned images not saved: are you sure you want to exit without saving?";
-    static private String DELETE_ALL_IMAGES = "Do you confirm to delete all the images of the stack?";
+	static private String DELETE_ALL_IMAGES = "Do you confirm to delete all the images of the stack?";
 	static private String IMAGE_SAVED_MESSAGE  = "Image successfully saved";
 	static private String ROI_NOT_ADDED_MESSAGE = "One or more corner points not added: they exceed the image bounds";
 	static private String INSUFFICIENT_MEMORY_MESSAGE = "Insufficient computer memory (RAM) available. \n\n\t Try to increase the allocated memory by going to \n\n\t                Edit  ▶ Options  ▶ Memory & Threads \n\n\t Change \"Maximum Memory\" to, at most, 1000 MB less than your computer's total RAM.";
@@ -117,13 +118,14 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 		}
 
 		if(dialogEvent instanceof ChangeImageEvent) {
+			image.removeMouseListeners();
 			Thread t = new Thread(() -> {
 				ChangeImageEvent event = (ChangeImageEvent)dialogEvent;
 				if((event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT && !manager.hasNext()) ||
-                        event.getChangeDirection() == ChangeImageEvent.ChangeDirection.PREV && !manager.hasPrevious()){
-                    this.loadingDialog.hideDialog();
-				    return;
-                }
+						event.getChangeDirection() == ChangeImageEvent.ChangeDirection.PREV && !manager.hasPrevious()){
+					this.loadingDialog.hideDialog();
+					return;
+				}
 
 				// per evitare memory leaks, invochiamo manualmente il garbage collector ad ogni cambio di immagine
 				image = event.getChangeDirection() == ChangeImageEvent.ChangeDirection.NEXT ? this.manager.next() : this.manager.previous();
@@ -131,9 +133,10 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
 				mainDialog.setNextImageButtonEnabled(manager.hasNext());
 				mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+				image.buildMouseListener();
 				this.loadingDialog.hideDialog();
 				refreshRoiGUI();
-                System.gc();
+				System.gc();
 			});
 			t.start();
 			this.loadingDialog.showDialog();
@@ -151,21 +154,34 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 		if(dialogEvent instanceof AddRoiEvent) {
 			AddRoiEvent event = (AddRoiEvent)dialogEvent;
 
+			Prefs.useNamesAsLabels = true;
+			Prefs.noPointLabels = false;
 			int roiWidth = Toolkit.getDefaultToolkit().getScreenSize().width > image.getWidth() ? Toolkit.getDefaultToolkit().getScreenSize().width : image.getWidth() ;
 			roiWidth = (int)(roiWidth * 0.03);
-			OvalRoi roi = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
-			roi.setCornerDiameter(10);
-			roi.setFillColor(Color.red);
-			roi.setStrokeColor(Color.blue);
+			OvalRoi outer = new OvalRoi (event.getClickCoords().x - (roiWidth / 2), event.getClickCoords().y - (roiWidth/2), roiWidth, roiWidth);
 
 			// get roughly the 0,25% of the width of the image as stroke width of th rois added.
 			// If the resultant value is too small, set it as the minimum value
 			int strokeWidth = (int) (image.getWidth() * 0.0025) > 3 ? (int) (image.getWidth() * 0.0025) : 3;
-			roi.setStrokeWidth(strokeWidth);
+			outer.setStrokeWidth(strokeWidth);
 
-			roi.setImage(image);
-			image.getManager().add(image, roi, image.getManager().getRoisAsArray().length + 1);
+		 	outer.setImage(image);
 
+		 	outer.setStrokeColor(Color.BLUE);
+			Overlay over = new Overlay();
+			over.drawBackgrounds(false);
+			over.drawLabels(false);
+			over.drawNames(true);
+			over.setLabelFontSize(Math.round(strokeWidth * 1f), "scale");
+			over.setLabelColor(Color.BLUE);
+			over.setStrokeWidth((double)strokeWidth);
+			over.setStrokeColor(Color.BLUE);
+			outer.setName("•");
+
+			Arrays.stream(image.getManager().getRoisAsArray()).forEach(roi -> over.add(roi));
+			over.add(outer);
+			image.getManager().setOverlay(over);
+			refreshRoiGUI();
 			refreshRoiGUI();
 		}
 
@@ -178,6 +194,11 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 			image.updateAndDraw();
 			if(previewDialog != null && previewDialog.isVisible())
 				previewDialog.drawRois();
+		}
+
+		if(dialogEvent instanceof SelectedRoiFromOvalEvent) {
+			SelectedRoiFromOvalEvent event = (SelectedRoiFromOvalEvent)dialogEvent;
+			mainDialog.lst_rois.setSelectedIndex(event.getRoiIndex());
 		}
 
 		if(dialogEvent instanceof DeselectedRoiEvent) {
@@ -246,10 +267,10 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 
 					// The final stack of the image is exceeding the maximum size of the images for imagej (see http://imagej.1557.x6.nabble.com/Large-image-td5015380.html)
 					if (((double)finalStackDimension.width * finalStackDimension.height) > Integer.MAX_VALUE){
-                        JOptionPane.showMessageDialog(null, IMAGE_SIZE_TOO_BIG, "Error: image size too big", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, IMAGE_SIZE_TOO_BIG, "Error: image size too big", JOptionPane.ERROR_MESSAGE);
 						loadingDialog.hideDialog();
-					    return;
-                    }
+						return;
+					}
 
 					ImageProcessor processor = sourceImg.getProcessor().createProcessor(finalStackDimension.width, finalStackDimension.height);
 					processor.insert(sourceImg.getProcessor(), maxOffsetX, maxOffsetY);
@@ -303,7 +324,7 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 					virtualStack = new VirtualStack(sourceImg.getWidth(), sourceImg.getHeight(), ColorModel.getRGBdefault(), IJ.getDir("temp"));
 					addToVirtualStack(sourceImg, virtualStack);
 					for(int i=1; i < manager.getNImages(); i++) {
-					    System.gc();
+						System.gc();
 						ImagePlus img = LeastSquareImageTransformation.transform(manager.get(i, true), sourceImg, event.isRotate());
 						addToVirtualStack(img, virtualStack);
 					}
@@ -404,20 +425,22 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 
 				if(roiPoints.stream().anyMatch(roiCoords-> roiCoords.x > image.getWidth() || roiCoords.y > image.getHeight()))
 					JOptionPane.showMessageDialog(null, ROI_NOT_ADDED_MESSAGE, "Warning", JOptionPane.WARNING_MESSAGE);
+
+				this.image.setCopyCornersMode();
 			}
 		}
 
 		if(dialogEvent instanceof RemoveImageEvent) {
-		    if(this.removeImageDialog != null && this.removeImageDialog.isVisible())
-		        return null;
+			if(this.removeImageDialog != null && this.removeImageDialog.isVisible())
+				return null;
 
-		    this.loadingDialog.showDialog();
-		    Utilities.setTimeout(() -> {
-                this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles(), this);
-                this.removeImageDialog.setVisible(true);
-                this.loadingDialog.hideDialog();
-                this.loadingDialog.requestFocus();
-            }, 20);
+			this.loadingDialog.showDialog();
+			Utilities.setTimeout(() -> {
+				this.removeImageDialog = new RemoveImageDialog(this.manager.getImageFiles(), this);
+				this.removeImageDialog.setVisible(true);
+				this.loadingDialog.hideDialog();
+				this.loadingDialog.requestFocus();
+			}, 20);
 		}
 
 		return null;
@@ -494,37 +517,37 @@ public class ImageAlignment extends AbstractContextual implements Command, OnMai
 		if(removeEvent instanceof DS4H.RemoveDialog.event.RemoveImageEvent) {
 			int imageFileIndex = ((DS4H.RemoveDialog.event.RemoveImageEvent)removeEvent).getImageFileIndex();
 
-            // only a image is available: if user remove this image we need to ask him to choose another one!
+			// only a image is available: if user remove this image we need to ask him to choose another one!
 			if(this.manager.getImageFiles().size() == 1) {
-                String[] buttons = { "Yes", "No"};
-                int answer = JOptionPane.showOptionDialog(null, DELETE_ALL_IMAGES, "Careful now",
-                        JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
+				String[] buttons = { "Yes", "No"};
+				int answer = JOptionPane.showOptionDialog(null, DELETE_ALL_IMAGES, "Careful now",
+						JOptionPane.WARNING_MESSAGE, 0, null, buttons, buttons[1]);
 
-                if(answer == 0) {
-                    String pathFile = promptForFile();
-                    if (pathFile.equals("nullnull")){
+				if(answer == 0) {
+					String pathFile = promptForFile();
+					if (pathFile.equals("nullnull")){
 
-                        disposeAll();
-                        System.exit(0);
-                        return;
-                    }
-                    this.disposeAll();
-                    this.initialize(pathFile);
-                }
-            }
+						disposeAll();
+						System.exit(0);
+						return;
+					}
+					this.disposeAll();
+					this.initialize(pathFile);
+				}
+			}
 			else {
 
-                // remove the image selected
-                this.removeImageDialog.removeImageFile(imageFileIndex);
-                this.manager.removeImageFile(imageFileIndex);
-                image = manager.get(manager.getCurrentIndex());
-                mainDialog.changeImage(image);
-                mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
-                mainDialog.setNextImageButtonEnabled(manager.hasNext());
-                mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
-                this.refreshRoiGUI();
-				 System.gc();
-            }
+				// remove the image selected
+				this.removeImageDialog.removeImageFile(imageFileIndex);
+				this.manager.removeImageFile(imageFileIndex);
+				image = manager.get(manager.getCurrentIndex());
+				mainDialog.changeImage(image);
+				mainDialog.setPrevImageButtonEnabled(manager.hasPrevious());
+				mainDialog.setNextImageButtonEnabled(manager.hasNext());
+				mainDialog.setTitle(MessageFormat.format("Editor Image {0}/{1}", manager.getCurrentIndex() + 1, manager.getNImages()));
+				this.refreshRoiGUI();
+				System.gc();
+			}
 		}
 	}
 

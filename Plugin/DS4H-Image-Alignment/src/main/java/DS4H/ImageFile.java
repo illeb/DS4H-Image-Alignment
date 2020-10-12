@@ -1,16 +1,12 @@
 package DS4H;
 
-import ij.ImagePlus;
+import DS4H.BufferedImage.BufferedImage;
 import ij.plugin.frame.RoiManager;
-import ij.process.ImageConverter;
-import loci.common.services.DependencyException;
-import loci.common.services.ServiceException;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.gui.BufferedImageReader;
 import loci.plugins.in.DisplayHandler;
-import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
 import java.awt.*;
