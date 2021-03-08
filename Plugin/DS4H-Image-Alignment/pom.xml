@@ -8,13 +8,13 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>29.2.1</version>
+		<version>30.0.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>DS4H-Image-Alignment</groupId>
 	<artifactId>DS4H-Image-Alignment</artifactId>
-	<version>1.0.5</version>
+	<version>1.0.6</version>
 
 	<name>DS4H Image Alignment plugin</name>
 	<description>DS4H Image Alignment plugin for medical research</description>
@@ -86,10 +86,11 @@
 			<artifactId>imagej</artifactId>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
+		<!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
 		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>bio-formats_plugins</artifactId>
-			<version>6.5.0</version>
+			<version>6.6.0</version>
 			<exclusions>
 				<exclusion>
 					<!-- NB: Exclude problematic uber-JAR that bundles commons-io. -->
